@@ -1,7 +1,7 @@
 /*
  * Pandino · i nove panda (SVG in linea, nessuna immagine esterna)
  * ---------------------------------------------------------------------------
- * L'insieme dei simboli S = {p1 … p9} corrisponde uno a uno agli interi 1…9.
+ * Dieci panda, uno per boschetto: il panda posato è quello del suo boschetto.
  * I panda si distinguono su più canali visivi insieme:
  *   sottospecie  panda gigante (bianco e nero) o panda minore (rosso)
  *   espressione  sorriso, occhiolino, stupore, occhi chiusi, sonno
@@ -116,12 +116,19 @@
           '<circle cx="94" cy="42" r="6" fill="#fff"' + tratto + '/>' +
           '<text x="2" y="24" font-family="system-ui, sans-serif" font-weight="900" font-size="16" fill="#0b7285">z</text>' +
           '<text x="11" y="12" font-family="system-ui, sans-serif" font-weight="900" font-size="11" fill="#0b7285">z</text>';
+      } },
+    { nome: 'Ombrellino', specie: 'panda gigante', tratto: 'panda gigante sorridente sotto un ombrellino a spicchi',
+      disegno: function () {
+        return gigante('aperti', 'sorriso') +
+          '<path d="M10 22 Q50 -14 90 22 Z" fill="#ffd43b"' + tratto + '/>' +
+          '<path d="M10 22 Q30 8 50 4 Q70 8 90 22 M36 9 L30 22 M64 9 L70 22" stroke="' + NERO + '" stroke-width="2" fill="#f08c00" fill-opacity=".35"/>' +
+          '<path d="M50 4 L50 -2" stroke="' + NERO + '" stroke-width="3" stroke-linecap="round"/>';
       } }
   ];
 
   function simboli() {
     var s = '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>';
-    for (var v = 1; v <= 9; v++) s += '<symbol id="panda-' + v + '" viewBox="-4 -4 108 112">' + PANDA[v].disegno() + '</symbol>';
+    for (var v = 1; v <= 10; v++) s += '<symbol id="panda-' + v + '" viewBox="-4 -4 108 112">' + PANDA[v].disegno() + '</symbol>';
     return s + '</defs></svg>';
   }
   function uso(v, classe) {

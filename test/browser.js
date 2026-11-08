@@ -32,26 +32,20 @@ async function pagina(browser, opz, errori) {
   return { ctx, p };
 }
 const stato = p => p.evaluate(() => window.Pandino.partita());
-const liv = (p, n, id) => p.evaluate(([n, id]) => window.Pandino.livello(n, id), [n, id]);
-const vuote = s => [...s].map((c, i) => c === '0' ? i : -1).filter(i => i >= 0);
-async function riempi(p, celle, sol) { for (const q of celle) { await p.click(`.cella[data-p="${q}"]`); await p.keyboard.press(sol[q]); } }
-async function apri(p, base, modo, n) {
+const liv = (p, id) => p.evaluate(id => window.Pandino.livello(id), id);
+const cella = (p, q) => p.locator(`#griglia .cella[data-p="${q}"]`);
+const soluzione = l => l.soluzione.map((c, r) => r * l.n + c);
+/** Imposta i progressi prima di caricare la pagina (così il salvataggio automatico non li sovrascrive). */
+async function conProgressi(p, base, progresso, imp) {
+  await p.goto(base + (base.includes('?') ? '&' : '?') + 'vuota=1');
+  await p.evaluate(([pr, im]) => {
+    localStorage.setItem('pandino.v3.progresso', JSON.stringify(pr));
+    if (im) localStorage.setItem('pandino.v3.impostazioni', JSON.stringify(im));
+  }, [progresso, imp]);
   await p.goto(base);
-  await p.click(`[data-modo="${modo}"]`);
-  await p.click(`.taglie [data-n="${n}"]`);
-  await p.click('#btn-continua');
-  await p.waitForSelector('#s-gioco:not([hidden])');
 }
-/** Gioca Panda Pop seguendo il suggerimento fino alla vittoria (o a un limite di mosse). */
-async function giocaPop(p, limite) {
-  for (let k = 0; k < limite; k++) {
-    const s = await stato(p);
-    if (s.finita) return true;
-    await p.click('#btn-suggerimento');
-    await p.click('#messaggio .btn.primario');
-    await p.waitForTimeout(30);
-  }
-  return (await stato(p)).finita;
+async function mettiTutti(p, l) {
+  for (const q of soluzione(l)) { if ((await stato(p)).stato[q] !== '2') await cella(p, q).click({ button: 'right' }); }
 }
 
 (async () => {
@@ -60,263 +54,193 @@ async function giocaPop(p, limite) {
   const browser = await chromium.launch();
   const errori = [];
 
-  // ================================================== computer: struttura e indicizzazione
+  // ===================================================== struttura e indicizzazione
   const { ctx, p } = await pagina(browser, { viewport: { width: 1280, height: 900 } }, errori);
   const risp = await p.goto(base);
   ok(risp.status() === 200, 'La pagina risponde 200 (' + base + ')');
   ok(await p.getAttribute('meta[name="robots"]', 'content') === 'noindex, nofollow', 'Meta robots «noindex, nofollow»');
   esiti.push('ℹ Header X-Robots-Tag: ' + (risp.headers()['x-robots-tag'] || 'assente (GitHub Pages non permette header personalizzati)'));
-  const conti = await p.evaluate(() => [4, 6, 9].map(n => window.Pandino.livelli(n)));
-  ok(conti[2] >= 1000, 'Livelli disponibili: 4×4 ' + conti[0] + ', 6×6 ' + conti[1] + ', 9×9 ' + conti[2]);
-  const esterni = await p.evaluate(() => performance.getEntriesByType('resource').map(r => r.name).filter(n => !/^(data|blob):/.test(n)));
-  ok(esterni.length === 0, 'Nessuna risorsa caricata da Internet');
+  ok(await p.evaluate(() => window.Pandino.totale()) >= 1000, 'Livelli disponibili: ' + await p.evaluate(() => window.Pandino.totale()));
+  ok((await p.evaluate(() => performance.getEntriesByType('resource').map(r => r.name).filter(n => !/^(data|blob):/.test(n)))).length === 0, 'Nessuna risorsa caricata da Internet');
   await foto(p, '01-inizio', true);
 
-  // ================================================== classico 9×9: tastiera, matita, aiuti, salvataggio
-  await apri(p, base, 'c', 9);
-  const l1 = await liv(p, 9, 1), v1 = vuote(l1.puzzle), primo = v1[0];
-  ok((await stato(p)).n === 9 && (await stato(p)).id === 1, 'Classico 9×9: si apre il livello 1');
-  await p.click(`.cella[data-p="${primo}"]`);
-  await p.keyboard.press(primo % 9 < 8 ? 'ArrowRight' : 'ArrowLeft');
-  ok((await stato(p)).sel === (primo % 9 < 8 ? primo + 1 : primo - 1), 'Le frecce spostano la selezione');
-  await p.click(`.cella[data-p="${primo}"]`);
-  const sbagliato = String(l1.soluzione[primo] === '9' ? 8 : +l1.soluzione[primo] + 1);
-  await p.keyboard.press(sbagliato);
-  ok(await p.$('.volante') !== null, 'Il panda vola dalla tavolozza alla casella (curva di Bézier)');
-  await p.waitForTimeout(450);
-  ok((await stato(p)).val[primo] === sbagliato, 'Il tasto numerico mette il panda');
-  ok(await p.$eval(`.cella[data-p="${primo}"]`, el => el.classList.contains('sbagliata') || el.classList.contains('conflitto')), 'Il panda sbagliato viene segnalato (non solo con il colore)');
-  const et = await p.getAttribute(`.cella[data-p="${primo}"]`, 'aria-label');
-  ok(/Panda \d/.test(et) && /(conflitto|soluzione)/.test(et), 'Nome accessibile: «' + et + '»');
+  // ===================================================== livello 1: tocco, cuori, tastiera, trascinamento
+  await p.click('#btn-continua');
+  await p.waitForSelector('#s-gioco:not([hidden])');
+  const l1 = await liv(p, 1), s1 = soluzione(l1);
+  const fuori = [...Array(25).keys()].filter(q => !s1.includes(q));
+  ok((await stato(p)).n === 5 && await p.locator('#griglia .cella').count() === 25, 'Livello 1: griglia 5×5 con 5 boschetti');
+  await cella(p, fuori[0]).click();
+  ok((await stato(p)).stato[fuori[0]] === '1', 'Primo tocco: segno ✕');
+  await cella(p, fuori[0]).click();
+  let s = await stato(p);
+  ok(s.cuori === 2 && s.stato[fuori[0]] === '1', 'Secondo tocco con panda nel posto sbagliato: un cuore in meno e la casella resta segnata');
+  ok(/non va/.test(await p.textContent('#messaggio')), 'Il messaggio spiega l’errore');
   await p.keyboard.press('Control+z');
-  ok((await stato(p)).val[primo] === '0', 'Ctrl+Z annulla');
+  ok((await stato(p)).stato[fuori[0]] === '0', 'Ctrl+Z annulla');
   await p.keyboard.press('Control+y');
-  ok((await stato(p)).val[primo] === sbagliato, 'Ctrl+Y ripristina');
+  ok((await stato(p)).stato[fuori[0]] === '1', 'Ctrl+Y ripristina');
+  await cella(p, 0).focus();
+  await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowDown');
+  ok((await stato(p)).sel === 6, 'Le frecce spostano la selezione');
+  const libera = fuori.find(q => (q !== fuori[0]));
+  await cella(p, libera).focus();
+  await p.keyboard.press('x');
+  ok((await stato(p)).stato[libera] === '1', 'Il tasto X mette il segno');
   await p.keyboard.press('Delete');
-  ok((await stato(p)).val[primo] === '0', 'Canc svuota la casella');
-  const iniz = [...l1.puzzle].findIndex(c => c !== '0');
-  await p.click(`.cella[data-p="${iniz}"]`); await p.keyboard.press('Delete');
-  ok((await stato(p)).val[iniz] === l1.puzzle[iniz], 'Le caselle iniziali non si modificano');
-  await p.click(`.cella[data-p="${primo}"]`);
-  await p.keyboard.press('m'); await p.keyboard.press('3'); await p.keyboard.press('7');
-  ok(await p.$eval(`.cella[data-p="${primo}"] .note`, el => /3/.test(el.textContent) && /7/.test(el.textContent)), 'La matita scrive le note');
-  await p.keyboard.press('7');
-  ok(await p.$eval(`.cella[data-p="${primo}"] .note`, el => !/7/.test(el.textContent)), 'La matita toglie una nota');
-  await p.keyboard.press('m');
-  await p.check('#rapido-auto');
-  ok(await p.$$eval('.note.auto', a => a.length) > 10, 'Candidati virtuali automatici visibili');
-  await p.uncheck('#rapido-auto');
+  ok((await stato(p)).stato[libera] === '0', 'Canc svuota la casella');
+  await cella(p, s1[0]).focus();
+  await p.keyboard.press('p');
+  ok((await stato(p)).stato[s1[0]] === '2', 'Il tasto P mette il panda');
+  ok(await p.locator('#griglia .puntino').count() > 0, 'Le caselle escluse dal panda mostrano un puntino');
+  const et = await cella(p, s1[0]).getAttribute('aria-label');
+  ok(/boschetto [A-J]: panda/.test(et), 'Nome accessibile: «' + et + '»');
+  // trascinamento: segna più caselle
+  const daSegnare = fuori.filter(q => q !== fuori[0] && Math.floor(q / 5) === Math.floor(fuori[1] / 5)).slice(0, 3);
+  if (daSegnare.length >= 2) {
+    const a = await cella(p, daSegnare[0]).boundingBox(), b = await cella(p, daSegnare[daSegnare.length - 1]).boundingBox();
+    await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down();
+    await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await p.mouse.up();
+    const st = (await stato(p)).stato;
+    ok(daSegnare.every(q => st[q] === '1' || st[q] === '2'), 'Trascinando si segnano più caselle in un colpo');
+  }
+  // suggerimento
   await p.click('#btn-suggerimento');
   const msg = await p.textContent('#messaggio');
-  ok(/Naked Single|Hidden Single|Pointing|Claiming|Pair|Triple|X-Wing|Swordfish/.test(msg), 'Il suggerimento spiega la tecnica: «' + msg.slice(0, 80) + '…»');
-  const prima = (await stato(p)).val;
+  ok(/Unico posto|Boschetto chiuso|toglie tutto|Gruppi|controllo/.test(msg), 'Il suggerimento spiega la deduzione: «' + msg.slice(0, 90) + '…»');
+  await foto(p, '02-suggerimento');
   await p.click('#messaggio .btn.primario');
-  await p.waitForTimeout(450);
-  const dopo = (await stato(p)).val, cambiata = [...dopo].findIndex((c, i) => c !== prima[i]);
-  ok(cambiata >= 0 && dopo[cambiata] === l1.soluzione[cambiata], 'Il panda suggerito è giusto');
-  await p.keyboard.press('Escape');
-  ok((await stato(p)).sel === -1, 'Esc toglie la selezione');
   await p.click('#btn-pausa');
   ok(await p.isVisible('#velo-pausa'), 'La pausa nasconde la griglia');
   await p.click('#btn-riprendi');
-  await foto(p, '02-classico-9x9');
-  const salvato = (await stato(p)).val;
+  const prima = (await stato(p)).stato;
   await p.waitForTimeout(300);
   await p.reload();
   await p.click('#btn-continua');
   await p.waitForSelector('#s-gioco:not([hidden])');
-  ok((await stato(p)).val === salvato, 'Dopo la riapertura la partita riprende da dove era');
-  await riempi(p, vuote((await stato(p)).val), l1.soluzione);
-  await p.waitForSelector('#d-vittoria[open]', { timeout: 8000 });
-  ok(true, 'Classico 9×9: completando la griglia compare la vittoria');
+  s = await stato(p);
+  ok(s.stato === prima && s.cuori === 2, 'Dopo la riapertura la partita riprende con segni, panda e cuori');
+  await mettiTutti(p, l1);
+  await p.waitForSelector('#d-fine[open]', { timeout: 8000 });
+  ok(/completato/i.test(await p.textContent('#t-fine')), 'Livello 1 completato: compare la vittoria');
   await foto(p, '03-vittoria');
   await p.click('#btn-vai-livelli');
   ok(await p.$eval('.livello-btn[data-id="1"]', b => b.classList.contains('completato')), 'Il livello 1 risulta completato');
   ok(await p.$eval('.livello-btn[data-id="4"]', b => b.disabled), 'Il livello 4 è ancora bloccato');
-  ok(await p.$$eval('#pagine button', a => a.length) === 5, 'Paginazione: 5 pagine da 50 livelli per capitolo');
-  ok(await p.$$eval('#capitoli button', a => a.length) === 4, 'Quattro capitoli: Facile, Medio, Difficile, Esperto');
+  ok(await p.locator('#capitoli button').count() === 6, 'Sei capitoli, dal 5×5 al 10×10');
+  ok(await p.locator('#pagine button').count() === 2, 'Paginazione: il capitolo 1 ha 2 pagine da 50');
   await p.fill('#cerca-livello', '600'); await p.click('#form-vai button');
   ok(/bloccato/.test(await p.textContent('#conteggio-livelli')), 'La ricerca porta al livello 600 e dice che è bloccato');
   await p.selectOption('#filtro', 'completati'); await p.click('#capitoli button >> nth=0');
-  ok(await p.$$eval('.livello-btn', a => a.length) === 1, 'Il filtro «Completati» mostra un livello');
+  ok(await p.locator('.livello-btn').count() === 1, 'Il filtro «Completati» mostra un livello');
+  await p.selectOption('#filtro', 'Esperto');
+  ok(await p.locator('.livello-btn').count() > 0 && (await p.locator('.livello-btn .f').allTextContents()).every(t => t === 'Esperto'), 'Il filtro per difficoltà funziona');
   await p.selectOption('#filtro', 'tutti');
   await foto(p, '04-livelli');
-  await p.reload(); await p.click('#btn-livelli');
-  ok(await p.$eval('.livello-btn[data-id="1"]', b => b.classList.contains('completato')), 'I progressi restano dopo la riapertura');
-
-  // sblocco: completare 2 e 3 apre il 4
   for (const id of [2, 3]) {
     await p.click(`.livello-btn[data-id="${id}"]`);
-    const l = await liv(p, 9, id);
-    await riempi(p, vuote(l.puzzle), l.soluzione);
-    await p.waitForSelector('#d-vittoria[open]', { timeout: 8000 });
-    if (id === 3) ok(/Livello 4 sbloccato/.test(await p.textContent('#x-vittoria')), 'Completare il livello 3 sblocca il livello 4');
+    await mettiTutti(p, await liv(p, id));
+    await p.waitForSelector('#d-fine[open]');
+    if (id === 3) ok(/Livello 4 sbloccato/.test(await p.textContent('#x-fine')), 'Completare il livello 3 sblocca il livello 4');
     await p.click('#btn-vai-livelli');
   }
   ok(await p.$eval('.livello-btn[data-id="4"]', b => !b.disabled), 'Il livello 4 ora è giocabile');
+  await p.reload(); await p.click('#btn-livelli');
+  ok(await p.$eval('.livello-btn[data-id="3"]', b => b.classList.contains('completato')), 'I progressi restano dopo la riapertura');
+  // conferme
   await p.click('.livello-btn[data-id="4"]');
-  const l4 = await liv(p, 9, 4);
-  await riempi(p, [vuote(l4.puzzle)[0]], l4.soluzione);
+  const l4 = await liv(p, 4);
+  await cella(p, soluzione(l4)[0]).click({ button: 'right' });
   await p.click('#btn-esci');
   ok(await p.isVisible('#d-conferma'), 'Uscendo da un livello in corso si chiede conferma');
   await p.click('#conferma-no');
   await p.click('#btn-nuova');
-  ok(/Ricominciare/.test(await p.textContent('#t-conferma')), '«Nuova» chiede conferma prima di ricominciare');
+  ok(/capo/.test(await p.textContent('#t-conferma')), '«Da capo» chiede conferma');
   await p.click('#conferma-si'); await p.waitForTimeout(300);
-  ok((await stato(p)).val === l4.puzzle, 'Dopo la conferma il livello riparte da capo');
+  ok(!/2/.test((await stato(p)).stato), 'Dopo la conferma il livello riparte vuoto');
+  // cuori finiti
+  const sbagliate = [...Array(l4.n * l4.n).keys()].filter(q => !soluzione(l4).includes(q)).slice(0, 3);
+  for (const q of sbagliate) await cella(p, q).click({ button: 'right' });
+  await p.waitForSelector('#d-fine[open]');
+  ok(/Cuori finiti/.test(await p.textContent('#t-fine')) && (await stato(p)).persa, 'Tre errori: cuori finiti e partita da riprovare');
+  await foto(p, '05-cuori-finiti');
+  await p.click('#btn-rigioca');
+  ok((await stato(p)).cuori === 3, '«Riprova» riparte con tre cuori');
 
-  // Esperto: suggerimenti onesti
-  await p.evaluate(() => { const k = 'pandino.v2.progresso', d = JSON.parse(localStorage.getItem(k)); d.completati.c[9][750] = { punti: 1, tempo: 1 }; localStorage.setItem(k, JSON.stringify(d)); });
-  await p.goto(base); await p.click('[data-modo="c"]'); await p.click('.taglie [data-n="9"]'); await p.click('#btn-livelli');
-  await p.fill('#cerca-livello', '751'); await p.click('#form-vai button');
-  await p.click('.livello-btn[data-id="751"]');
-  const l751 = await liv(p, 9, 751);
-  let dichiarato = false, fuori = 0;
-  for (let i = 0; i < 300; i++) {
+  // ===================================================== modo rilassato: conflitti e controllo
+  await p.click('[data-apri="d-impostazioni"]');
+  await p.check('input[name="cuori"][value="no"]');
+  await p.click('#form-impostazioni button[value="chiudi"]');
+  ok(await p.isHidden('#box-cuori'), 'Modo rilassato: niente cuori');
+  const sb = sbagliate[0], vicina = [sb + 1, sb - 1, sb + l4.n, sb - l4.n].find(q => q >= 0 && q < l4.n * l4.n && Math.abs((q % l4.n) - (sb % l4.n)) <= 1);
+  await cella(p, sb).click({ button: 'right' });
+  await cella(p, vicina).click({ button: 'right' });
+  ok(await cella(p, sb).evaluate(el => el.classList.contains('conflitto')), 'Due panda che si toccano: conflitto segnalato con righe diagonali e «!»');
+  ok(/tocca|stessa|stesso/.test(await p.textContent('#messaggio')), 'Il conflitto è spiegato a parole');
+  await p.click('#btn-controlla');
+  ok(/non (è|sono) al posto giusto/.test(await p.textContent('#messaggio')), '«Controlla» distingue i panda fuori posto dai conflitti');
+  await foto(p, '06-rilassato-conflitti');
+  await p.click('[data-apri="d-impostazioni"]');
+  await p.check('input[name="cuori"][value="si"]');
+  await p.click('#form-impostazioni button[value="chiudi"]');
+
+  // ===================================================== livello esperto risolto solo con i suggerimenti
+  await conProgressi(p, base, { completati: { 1049: { punti: 1, tempo: 1 } }, inCorso: {}, ultimo: 1050 });
+  await p.click('#btn-continua');
+  const l1050 = await liv(p, 1050);
+  ok(l1050.n === 10, 'Livello 1050: griglia 10×10, ' + l1050.fascia);
+  let passi = 0;
+  while (!(await stato(p)).finita && passi < 300) {
     await p.click('#btn-suggerimento');
-    if (/Nessuna mossa sicura/.test(await p.textContent('#messaggio'))) { dichiarato = true; break; }
+    if (/Nessuna deduzione/.test(await p.textContent('#messaggio'))) break;
     await p.click('#messaggio .btn.primario');
-    const v = (await stato(p)).val;
-    for (let q = 0; q < 81; q++) if (v[q] !== '0' && v[q] !== l751.soluzione[q]) fuori++;
-    if ((await stato(p)).finita) break;
+    passi++;
   }
-  ok(fuori === 0, 'Esperto: tutti i panda suggeriti sono giusti');
-  ok(dichiarato, 'Esperto: quando le tecniche non bastano il gioco lo dichiara');
-  await foto(p, '05-esperto-onesto');
-
-  // ================================================== 4×4 e 6×6
-  for (const n of [4, 6]) {
-    await apri(p, base, 'c', n);
-    const l = await liv(p, n, 1);
-    ok(await p.$$eval('.cella', a => a.length) === n * n && await p.$$eval('.tasto-panda', a => a.length) === n, n + '×' + n + ': griglia di ' + n * n + ' caselle e ' + n + ' panda');
-    await p.keyboard.press(String(n + 1 <= 9 ? n + 1 : 9));
-    ok((await stato(p)).val === l.puzzle, n + '×' + n + ': il tasto ' + (n + 1) + ' non è accettato');
-    await riempi(p, vuote(l.puzzle), l.soluzione);
-    await p.waitForSelector('#d-vittoria[open]', { timeout: 8000 });
-    ok(true, n + '×' + n + ': livello 1 completato');
-    await foto(p, '06-classico-' + n + 'x' + n);
-    await p.click('#btn-vai-livelli');
-  }
-
-  // ================================================== Panda Pop
-  await apri(p, base, 'p', 9);
-  let s = await stato(p);
-  ok(s.modo === 'p' && s.vassoio.filter(Boolean).length === 3, 'Panda Pop: tre tessere nel vassoio');
-  ok(/variante arcade/.test(await p.textContent('#meta-livello')), 'Panda Pop è presentata come variante arcade');
-  const daLib0 = s.liberare;
-  // tessera rifiutata con spiegazione
-  await p.click('.tessera[data-i="0"]');
-  const occupata = [...s.val].findIndex(c => c !== '0');
-  await p.click(`.cella[data-p="${occupata}"]`);
-  ok(/occupat|griglia|già/.test(await p.textContent('#messaggio')), 'Una posa non valida viene rifiutata con la spiegazione');
-  await foto(p, '07-pop-rifiuto');
-  // posa con il suggerimento
-  await p.click('#btn-suggerimento');
-  await foto(p, '08-pop-suggerimento');
-  await p.click('#messaggio .btn.primario');
-  await p.waitForTimeout(500);
   s = await stato(p);
-  ok(s.punti > 0, 'Panda Pop: la posa assegna punti (' + s.punti + ')');
-  await p.keyboard.press('Control+z');
-  ok((await stato(p)).punti === 0, 'Panda Pop: la posa si può annullare');
-  await p.keyboard.press('Control+y');
-  // trascinamento con il mouse
-  const s2 = await stato(p);
-  const ti = s2.vassoio.findIndex(Boolean);
-  const pos = await p.evaluate(i => {
-    // trova una posizione valida per la tessera i usando il motore della pagina
-    const M = window.PandinoMotore, g = window.Pandino.partita(), geo = M.geometria(g.n), val = g.val.split('').map(Number);
-    for (let a = 0; a < geo.N; a++) if (M.provaTessera(geo, val, g.vassoio[i], a).ok) return a;
-    return -1;
-  }, ti);
-  if (pos >= 0) {
-    const tb = await p.$(`.tessera[data-i="${ti}"] .mc.piena`);
-    const fr = await tb.boundingBox();
-    const forma = s2.vassoio[ti].forma[0];
-    const cel = await (await p.$(`.cella[data-p="${pos + forma[0] * 9 + forma[1]}"]`)).boundingBox();
-    await p.mouse.move(fr.x + fr.width / 2, fr.y + fr.height / 2);
-    await p.mouse.down();
-    await p.mouse.move(fr.x + 30, fr.y - 20, { steps: 4 });
-    await p.mouse.move(cel.x + cel.width / 2, cel.y + cel.height / 2, { steps: 10 });
-    await foto(p, '09-pop-trascinamento');
-    await p.mouse.up();
-    await p.waitForTimeout(500);
-    ok((await stato(p)).vassoio[ti] === null || (await stato(p)).punti > s2.punti, 'Panda Pop: la tessera si posa trascinandola');
-  }
-  const vinta = await giocaPop(p, 400);
-  ok(vinta, 'Panda Pop 9×9: partita giocata fino alla vittoria (liberati ' + daLib0 + ' panda di partenza)');
-  await foto(p, '10-pop-vittoria');
-  if (await p.isVisible('#d-vittoria')) await p.click('#btn-vai-livelli');
+  ok(s.finita && s.cuori === 3, 'Livello ' + l1050.fascia + ' 10×10 risolto seguendo solo i suggerimenti (' + passi + ' passi, nessun cuore perso)');
+  await p.waitForSelector('#d-fine[open]');
+  await foto(p, '07-esperto-con-aiuti');
+  await p.click('#btn-vai-livelli');
 
-  // impostazioni: indice a puntini e sfida visiva
-  await apri(p, base, 'c', 9);
-  await p.click('[data-apri="d-impostazioni"]');
-  await p.check('input[name="indice"][value="puntini"]');
-  await p.click('#form-impostazioni button[value="chiudi"]');
-  ok(await p.$$eval('.cella .puntini', a => a.length) > 10, 'Indice di decodifica a puntini');
-  await p.click('[data-apri="d-impostazioni"]');
-  await p.check('input[name="indice"][value="nessuno"]');
-  await p.click('#form-impostazioni button[value="chiudi"]');
-  ok(await p.$eval('.cella .num', el => getComputedStyle(el).display === 'none'), 'Sfida visiva: nessun indice sui panda');
-  ok(/Panda \d/.test(await p.getAttribute('.cella[aria-label*="Panda"]', 'aria-label')), 'Sfida visiva: lo screen reader legge ancora il numero');
-  await foto(p, '11-sfida-visiva');
-  await p.click('[data-apri="d-impostazioni"]');
-  await p.check('input[name="indice"][value="numero"]');
-  await p.click('#form-impostazioni button[value="chiudi"]');
-
-  // partita libera riproducibile
-  for (const [n, f] of [[9, 'Difficile'], [6, 'Medio']]) {
-    const val = [];
-    for (let k = 0; k < 2; k++) {
-      await p.goto(base); await p.click('#btn-libera');
-      await p.selectOption('#libera-n', String(n)); await p.selectOption('#libera-fascia', f);
-      await p.fill('#libera-seed', '12345');
-      const t0 = Date.now();
-      await p.click('#btn-genera');
-      await p.waitForSelector('#s-gioco:not([hidden])', { timeout: 10000 });
-      if (!k) ok(true, 'Partita libera ' + n + '×' + n + ' ' + f + ' generata in ' + (Date.now() - t0) + ' ms');
-      val.push((await stato(p)).val);
-    }
-    ok(val[0] === val[1], 'Partita libera ' + n + '×' + n + ': stesso codice, stessa partita');
+  // ===================================================== partita libera
+  const giocate = [];
+  for (let k = 0; k < 2; k++) {
+    await p.goto(base); await p.click('#btn-libera');
+    await p.selectOption('#libera-n', '8'); await p.selectOption('#libera-fascia', 'Difficile');
+    await p.fill('#libera-seed', '4242');
+    const t0 = Date.now();
+    await p.click('#btn-genera');
+    await p.waitForSelector('#s-gioco:not([hidden])', { timeout: 10000 });
+    if (!k) ok(true, 'Partita libera 8×8 difficile generata in ' + (Date.now() - t0) + ' ms');
+    giocate.push(JSON.stringify(await p.evaluate(() => { const c = [...document.querySelectorAll('#griglia .cella')]; return c.map(x => x.className).join('|'); })));
   }
+  ok(giocate[0] === giocate[1], 'Partita libera: stesso codice, stesso livello');
   await ctx.close();
 
-  // ================================================== smartphone e tablet (tocco)
-  for (const [nome, disp] of [['12-smartphone', devices['iPhone 13']], ['13-smartphone-piccolo', devices['iPhone SE']], ['14-tablet', devices['iPad (gen 7)']]]) {
+  // ===================================================== smartphone e tablet
+  for (const [nome, disp, id] of [['08-smartphone', devices['iPhone 13'], 1], ['09-smartphone-piccolo', devices['iPhone SE'], 1001], ['10-tablet', devices['iPad (gen 7)'], 551]]) {
     const m = await pagina(browser, Object.assign({}, disp), errori);
-    await m.p.goto(base);
+    await conProgressi(m.p, base, { completati: id > 1 ? { [id - 1]: { punti: 1, tempo: 1 } } : {}, inCorso: {}, ultimo: id });
     await m.p.tap('#btn-continua');
     await m.p.waitForSelector('#s-gioco:not([hidden])');
-    const l = await liv(m.p, 9, 1), q = vuote(l.puzzle)[0];
-    await m.p.tap(`.cella[data-p="${q}"]`);
-    await m.p.tap(`.tasto-panda[data-v="${l.soluzione[q]}"]`);
-    await m.p.waitForTimeout(450);
-    ok((await stato(m.p)).val[q] === l.soluzione[q], nome + ': tocco su casella e panda (classico)');
+    const l = await liv(m.p, id), sol = soluzione(l);
+    await cella(m.p, sol[0]).tap();
+    await cella(m.p, sol[0]).tap();
+    ok((await stato(m.p)).stato[sol[0]] === '2', nome + ' (' + l.n + '×' + l.n + '): due tocchi mettono il panda');
     const larg = await m.p.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
     ok(larg[0] <= larg[1], nome + ': nessuno scorrimento orizzontale (' + larg.join(' ≤ ') + ')');
-    await foto(m.p, nome + '-classico', true);
-    // Panda Pop al tocco
-    await m.p.goto(base);
-    await m.p.tap('[data-modo="p"]');
-    await m.p.tap('#btn-continua');
-    await m.p.waitForSelector('#s-gioco:not([hidden])');
-    await m.p.tap('#btn-suggerimento');
-    const sp = await stato(m.p);
-    await m.p.tap('#messaggio .btn.primario');
-    await m.p.waitForTimeout(500);
-    ok((await stato(m.p)).punti > sp.punti, nome + ': Panda Pop si gioca al tocco');
-    const larg2 = await m.p.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
-    ok(larg2[0] <= larg2[1], nome + ': Panda Pop senza scorrimento orizzontale');
-    await foto(m.p, nome + '-pop', true);
+    const lato = await m.p.$eval('#griglia', el => el.getBoundingClientRect().width / window.Pandino.partita().n);
+    ok(lato >= 28, nome + ': caselle di ' + Math.round(lato) + ' px');
+    await foto(m.p, nome, true);
     await m.ctx.close();
   }
 
-  // ================================================== tema scuro e movimento ridotto
+  // ===================================================== tema scuro e movimento ridotto
   const sc = await pagina(browser, { viewport: { width: 1000, height: 800 }, colorScheme: 'dark', reducedMotion: 'reduce' }, errori);
   await sc.p.goto(base);
   ok(!(await sc.p.evaluate(() => document.documentElement.classList.contains('anim'))), 'Con «riduci movimento» le animazioni partono spente');
-  await sc.p.click('[data-modo="p"]'); await sc.p.click('#btn-continua');
-  await foto(sc.p, '15-tema-scuro');
+  await sc.p.click('#btn-continua');
+  await foto(sc.p, '11-tema-scuro');
   await sc.ctx.close();
 
   ok(errori.length === 0, 'Nessun errore JavaScript in console' + (errori.length ? ': ' + errori.slice(0, 3).join(' | ') : ''));
