@@ -43,7 +43,7 @@ function controlla(l, et) {
   if (conta.conteggio !== 1) sbaglio(et + ': soluzioni trovate ' + conta.conteggio);
   else if (conta.soluzione.join() !== sol.join()) sbaglio(et + ': soluzione diversa da quella registrata');
   const rig = M.generaLivello(n, l.seed);
-  if (!rig || rig.zone.join('') !== zone.join('') || rig.soluzione.join() !== sol.join()) sbaglio(et + ': non riproducibile dal seed ' + l.seed);
+  if (!rig || rig.zone.join() !== zone.join() || rig.soluzione.join() !== sol.join()) sbaglio(et + ': non riproducibile dal seed ' + l.seed);
   const val = M.valuta(n, zone);
   if (M.fasciaDi(val) !== l.fascia) sbaglio(et + ': fascia ' + l.fascia + ' ma la stima dice ' + M.fasciaDi(val));
   // catena dei suggerimenti

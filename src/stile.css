@@ -6,7 +6,7 @@
   --sfondo: #f4efe3; --carta: #fffdf7; --carta-2: #f5efe2; --inchiostro: #1d2621; --tenue: #4f5b55; --linea: #c9c1ae;
   --bambu: #2a7445; --bambu-scuro: #1c5632; --su-bambu: #fff; --accento: #b8560f; --errore: #a51d16; --errore-sfondo: #fde4e1;
   --bordo-zona: #1d2621; --sottile: rgba(29, 38, 33, .18); --motivo: rgba(29, 38, 33, .09); --selez: #1d2621;
-  --z0: #f9d8a6; --z1: #c2e5b5; --z2: #bcd8f3; --z3: #f6c4d8; --z4: #e2d1f6; --z5: #fff0a0; --z6: #c6ece4; --z7: #f7c8b2; --z8: #dadcbf; --z9: #d3e2ff;
+  --z0: #f9d8a6; --z1: #c2e5b5; --z2: #bcd8f3; --z3: #f6c4d8; --z4: #e2d1f6; --z5: #fff0a0; --z6: #c6ece4; --z7: #f7c8b2; --z8: #dadcbf; --z9: #d3e2ff; --z10: #ffd9a8; --z11: #d8f0a8;
   --ombra: 0 1px 2px rgba(30, 40, 30, .08), 0 6px 18px rgba(30, 40, 30, .08);
   --raggio: 14px; --curva: cubic-bezier(.34, 1.56, .64, 1); --morbida: cubic-bezier(.22, .9, .3, 1);
   color-scheme: light;
@@ -16,7 +16,7 @@
     --sfondo: #111613; --carta: #1a211d; --carta-2: #222b26; --inchiostro: #edf3ee; --tenue: #b0bdb5; --linea: #3a463f;
     --bambu: #6cc38a; --bambu-scuro: #8fd9a7; --su-bambu: #0d1a12; --accento: #f2a65a; --errore: #ff8f85; --errore-sfondo: #3d1c19;
     --bordo-zona: #f2f6f3; --sottile: rgba(237, 243, 238, .16); --motivo: rgba(255, 255, 255, .08); --selez: #f2f6f3;
-    --z0: #6b4a1f; --z1: #2f5a33; --z2: #24476b; --z3: #6b2f4a; --z4: #4d3a6b; --z5: #66591a; --z6: #1f5a52; --z7: #6b3a2a; --z8: #4f5435; --z9: #2f3f6b;
+    --z0: #6b4a1f; --z1: #2f5a33; --z2: #24476b; --z3: #6b2f4a; --z4: #4d3a6b; --z5: #66591a; --z6: #1f5a52; --z7: #6b3a2a; --z8: #4f5435; --z9: #2f3f6b; --z10: #5e3f12; --z11: #3f5a1c;
     --ombra: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .35);
     color-scheme: dark;
   }
@@ -25,7 +25,7 @@
   --sfondo: #111613; --carta: #1a211d; --carta-2: #222b26; --inchiostro: #edf3ee; --tenue: #b0bdb5; --linea: #3a463f;
   --bambu: #6cc38a; --bambu-scuro: #8fd9a7; --su-bambu: #0d1a12; --accento: #f2a65a; --errore: #ff8f85; --errore-sfondo: #3d1c19;
   --bordo-zona: #f2f6f3; --sottile: rgba(237, 243, 238, .16); --motivo: rgba(255, 255, 255, .08); --selez: #f2f6f3;
-  --z0: #6b4a1f; --z1: #2f5a33; --z2: #24476b; --z3: #6b2f4a; --z4: #4d3a6b; --z5: #66591a; --z6: #1f5a52; --z7: #6b3a2a; --z8: #4f5435; --z9: #2f3f6b;
+  --z0: #6b4a1f; --z1: #2f5a33; --z2: #24476b; --z3: #6b2f4a; --z4: #4d3a6b; --z5: #66591a; --z6: #1f5a52; --z7: #6b3a2a; --z8: #4f5435; --z9: #2f3f6b; --z10: #5e3f12; --z11: #3f5a1c;
   --ombra: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .35);
   color-scheme: dark;
 }
@@ -146,6 +146,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 0 16px 32px; }
 .z6 { --zc: var(--z6); --mz: linear-gradient(var(--motivo) 2px, transparent 2px), linear-gradient(90deg, var(--motivo) 2px, transparent 2px); --mzs: 10px 10px; }
 .z7 { --zc: var(--z7); --mz: radial-gradient(circle, var(--motivo) 32%, transparent 34%); --mzs: 14px 14px; }
 .z8 { --zc: var(--z8); --mz: conic-gradient(var(--motivo) 25%, transparent 0 50%, var(--motivo) 0 75%, transparent 0); --mzs: 12px 12px; }
+.z10 { --zc: var(--z10); --mz: radial-gradient(circle at 25% 25%, var(--motivo) 18%, transparent 20%), radial-gradient(circle at 75% 75%, var(--motivo) 18%, transparent 20%); --mzs: 12px 12px; }
+.z11 { --zc: var(--z11); --mz: repeating-linear-gradient(60deg, var(--motivo) 0 3px, transparent 3px 11px); --mzs: auto; }
 .z9 { --zc: var(--z9); --mz: repeating-linear-gradient(45deg, var(--motivo) 0 2px, transparent 2px 8px), repeating-linear-gradient(-45deg, var(--motivo) 0 2px, transparent 2px 8px); --mzs: auto; }
 
 @keyframes atterra { 0% { transform: scale(.3) translateY(-20%); } 45% { transform: scale(1.18, .8); } 70% { transform: scale(.92, 1.1); } 100% { transform: none; } }

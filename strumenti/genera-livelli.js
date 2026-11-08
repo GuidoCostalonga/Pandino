@@ -8,8 +8,7 @@
  * tentativi: così il suggerimento trova sempre una mossa.
  * Ogni livello si rigenera identico con generaLivello(n, seed).
  *
- * Capitoli: 5×5 (100), 6×6 (200), 7×7 (250), 8×8 (250), 9×9 (200), 10×10 (100),
- * per un totale di 1.100 livelli; dentro ogni capitolo i livelli vanno dal più
+ * Capitoli: 10×10 (450), 11×11 (350), 12×12 (250), per un totale di 1.050 livelli; dentro ogni capitolo i livelli vanno dal più
  * facile al più difficile. Più 5 livelli di riserva per dimensione.
  *
  * Uso: node strumenti/genera-livelli.js
@@ -19,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const M = require('../src/motore.js');
 
-const PIANO = [[5, 100], [6, 200], [7, 250], [8, 250], [9, 200], [10, 100]];
+const PIANO = [[10, 450], [11, 350], [12, 250]];
 const RISERVA = 5;
 const inizio = Date.now();
 const visti = new Set();
@@ -30,13 +29,13 @@ for (const [n, quanti] of PIANO) {
     const seed = n * 1000003 + s;
     const l = M.generaLivello(n, seed);
     if (!l) continue;
-    const chiave = l.zone.join('');
+    const chiave = l.zone.map(z => M.NOMI_ZONA[z]).join('');
     if (visti.has(chiave)) continue;
     const val = M.valuta(n, l.zone);
     const fascia = M.fasciaDi(val);
     if (!fascia) continue;
     visti.add(chiave);
-    const voce = { n, seed, zone: chiave.split('').map(Number).map(z => M.NOMI_ZONA[z]).join(''), soluzione: l.soluzione.join(','),
+    const voce = { n, seed, zone: chiave, soluzione: l.soluzione.join(','),
       fascia, rango: val.rango, punteggio: val.punteggio };
     if (scelti.length < quanti) scelti.push(voce); else riserva.push(voce);
     if (s > 200000) throw new Error('Troppi tentativi per n=' + n);
