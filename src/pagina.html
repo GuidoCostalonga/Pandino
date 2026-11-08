@@ -9,7 +9,7 @@
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="bingbot" content="noindex, nofollow">
 <title>Pandino</title>
-<meta name="description" content="Pandino: un panda per riga, per colonna e per boschetto, e i panda non si toccano mai. 1.100 livelli.">
+<meta name="description" content="Pandino: un panda per riga, per colonna e per boschetto, e i panda non si toccano mai. Più di 1.000 livelli da 10×10 a 12×12.">
 <meta name="theme-color" content="#2a7445">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='24' cy='30' r='13'/%3E%3Ccircle cx='76' cy='30' r='13'/%3E%3Cellipse cx='50' cy='57' rx='36' ry='32' fill='%23fff' stroke='%23000' stroke-width='4'/%3E%3Cellipse cx='36' cy='54' rx='8' ry='11'/%3E%3Cellipse cx='64' cy='54' rx='8' ry='11'/%3E%3Cellipse cx='50' cy='68' rx='6' ry='4'/%3E%3C/svg%3E">
 <style>
@@ -60,7 +60,7 @@
       <h2 id="t-livelli">Livelli</h2>
       <button type="button" class="btn piccolo" data-vai="s-inizio">← Inizio</button>
     </div>
-    <p class="nota">Sei capitoli, dal 5×5 al 10×10. Ogni livello ha una sola soluzione, verificata, e si risolve con la logica, senza tirare a indovinare. La difficoltà è una <strong>stima</strong>: dipende dal ragionamento più impegnativo che serve, non solo dalla grandezza.</p>
+    <p class="nota">Tre capitoli: 10×10, 11×11 e 12×12. Ogni livello ha una sola soluzione, verificata, e si risolve con la logica, senza tirare a indovinare. La difficoltà è una <strong>stima</strong>: dipende dal ragionamento più impegnativo che serve, non solo dalla grandezza.</p>
     <div class="capitoli" id="capitoli" role="group" aria-label="Capitoli"></div>
     <div class="filtri">
       <form id="form-vai" class="filtri" style="margin:0">
@@ -229,7 +229,7 @@
       <p>Pandino crea al momento un livello nuovo, con una sola soluzione verificata. Con lo stesso codice ottieni sempre lo stesso livello.</p>
       <div class="filtri">
         <label>Griglia
-          <select id="libera-n"><option value="5">5×5</option><option value="6">6×6</option><option value="7" selected>7×7</option><option value="8">8×8</option><option value="9">9×9</option><option value="10">10×10</option></select>
+          <select id="libera-n"><option value="10" selected>10×10</option><option value="11">11×11</option><option value="12">12×12</option></select>
         </label>
         <label>Difficoltà
           <select id="libera-fascia"><option value="">Qualsiasi</option><option>Facile</option><option>Medio</option><option>Difficile</option><option>Esperto</option></select>

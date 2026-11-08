@@ -16,7 +16,7 @@ grafica originali.
 
 | | |
 |---|---|
-| Livelli | **1.100** verificati, in 6 capitoli: 5×5 (100), 6×6 (200), 7×7 (250), 8×8 (250), 9×9 (200), 10×10 (100), più 30 di riserva |
+| Livelli | **1.050** verificati, in 3 capitoli: 10×10 (450), 11×11 (350), 12×12 (250), più 15 di riserva |
 | Difficoltà | Facile, Medio, Difficile, Esperto, stimate dal ragionamento più impegnativo necessario |
 | Modi | Con tre cuori, oppure rilassato con controllo manuale |
 | Tecnologia | HTML, CSS e JavaScript in un solo file, nessuna risorsa da Internet |
@@ -26,11 +26,11 @@ grafica originali.
 | Percorso | Contenuto |
 |---|---|
 | `src/motore.js` | Motore: geometria, conteggio delle soluzioni, generazione, deduzioni logiche |
-| `src/panda.js` | I dieci panda in SVG, uno per boschetto |
+| `src/panda.js` | I dieci panda in SVG; il panda posato è quello del suo boschetto |
 | `src/app.js` | Interfaccia, partite, salvataggio, accessibilità |
 | `src/stile.css`, `src/pagina.html` | Stile e scheletro della pagina |
 | `dati/livelli.json` | Catalogo dei livelli: seed, boschetti, soluzione, difficoltà |
-| `strumenti/genera-livelli.js` | Rigenera il catalogo (circa 30 secondi) |
+| `strumenti/genera-livelli.js` | Rigenera il catalogo (circa un minuto) |
 | `strumenti/costruisci.js` | Produce `dist/index.html`, il file da pubblicare |
 | `test/verifica-livelli.js` | Verifica del catalogo e dei suggerimenti |
 | `test/browser.js` | Collaudo nel browser (Playwright) |
@@ -48,17 +48,21 @@ node test/browser.js https://costalonga.org/pandino/   # pagina pubblicata
 ### Modello e conteggio delle soluzioni
 Una variabile per riga: la colonna del suo panda. I vincoli sono: colonne tutte
 diverse, boschetti tutti diversi, colonne di righe vicine distanti almeno 2.
-`contaSoluzioni` usa il backtracking: sceglie sempre la riga con meno colonne
-possibili (MRV) e torna indietro appena una riga resta senza scelte. Si ferma a
-due soluzioni, che bastano per sapere se la soluzione è unica.
+`contaSoluzioni` usa il backtracking con maschere di bit. A ogni passo calcola
+le colonne ancora ammesse per ogni riga (Forward Checking) e controlla che ogni
+riga, colonna e boschetto abbia ancora un posto. Poi si ramifica sul vincolo con
+meno possibilità, riga o boschetto (MRV). Si ferma a due soluzioni, che bastano
+per sapere se la soluzione è unica. Tempo medio di generazione di un livello:
+circa 13 ms per il 10×10, 46 ms per l'11×11, 140 ms per il 12×12.
 
 ### Generazione dei livelli
 `generaLivello(n, seed)`:
 1. dispone n panda a caso, uno per riga e colonna, senza contatti;
 2. fa crescere un boschetto attorno a ogni panda, a caso e con pesi diversi,
    finché la griglia è piena;
-3. se esiste più di una soluzione, sposta in un boschetto vicino una casella
-   usata dalla soluzione alternativa, senza spezzare il boschetto, e riprova.
+3. cerca una soluzione diversa da quella voluta; se c'è, sposta in un
+   boschetto vicino una casella usata da quella soluzione, senza spezzare il
+   boschetto, e riprova.
 
 Il generatore pseudocasuale ha un seed: lo stesso seed dà sempre lo stesso
 livello. Il catalogo tiene solo i livelli che le deduzioni logiche risolvono
@@ -92,7 +96,7 @@ deduzione funziona lo dice, e offre di mostrare un panda contandolo come aiuto.
   oppure gli strumenti «Solo panda» e «Solo segni». Trascinando si segnano più
   caselle. Il clic destro mette o toglie il panda.
 - **Tastiera**: frecce, Spazio, P, X, Canc, S, Ctrl+Z e Ctrl+Y, Esc.
-- **Livelli**: sei capitoli, paginazione da 50, ricerca per numero, filtri per
+- **Livelli**: tre capitoli, paginazione da 50, ricerca per numero, filtri per
   stato e per difficoltà. I primi tre livelli di ogni capitolo sono aperti;
   ogni livello completato apre il successivo.
 - **Partita libera**: generata al momento in un Web Worker; dopo 6 secondi

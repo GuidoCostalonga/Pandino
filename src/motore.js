@@ -70,49 +70,104 @@
   // =========================================================================
   // 3. Conteggio delle soluzioni
   // =========================================================================
+  var CONTA = new Uint8Array(1 << 14);
+  for (var i0 = 1; i0 < CONTA.length; i0++) CONTA[i0] = CONTA[i0 >> 1] + (i0 & 1);
+  var cacheMaschere = {};
+  /** Per ogni riga e ogni boschetto, la maschera delle colonne di quel boschetto in quella riga. */
+  function maschere(n, zone) {
+    var RZ = [];
+    for (var r = 0; r < n; r++) {
+      var riga = new Int32Array(n);
+      for (var c = 0; c < n; c++) riga[zone[r * n + c]] |= 1 << c;
+      RZ.push(riga);
+    }
+    return RZ;
+  }
+
   /**
    * Conta le soluzioni fino a `limite`. `zone` è un vettore di n*n indici di
-   * boschetto. `escluse` (facoltativo) vieta alcune caselle, `fissi`
-   * (facoltativo) impone il panda in alcune righe: col[r] = fissi[r] se >= 0.
-   * MRV: a ogni passo si sceglie la riga con meno colonne ammesse.
-   * Forward Checking: se una riga resta senza colonne si torna indietro subito.
+   * boschetto. Facoltativi: `escluse` vieta alcune caselle, `fissi[r]` impone
+   * la colonna del panda nella riga r, `diversaDa` fa contare solo le
+   * soluzioni diverse da quella data.
+   * Ricerca con maschere di bit: a ogni passo si calcolano le colonne ammesse
+   * per ogni riga libera (Forward Checking) e si controlla che ogni riga,
+   * colonna e boschetto abbia ancora almeno un posto; poi si ramifica sul
+   * vincolo con meno possibilità, riga o boschetto (MRV).
    */
-  function contaSoluzioni(n, zone, limite, escluse, fissi) {
+  function contaSoluzioni(n, zone, limite, escluse, fissi, diversaDa) {
     limite = limite || 2;
-    var col = new Int8Array(n).fill(-1), usataC = 0, usataZ = 0, conteggio = 0, prima = null;
-    function ammessa(r, c) {
-      var p = r * n + c;
-      if (escluse && escluse[p]) return false;
-      if (usataC & (1 << c) || usataZ & (1 << zone[p])) return false;
-      if (r > 0 && col[r - 1] >= 0 && Math.abs(col[r - 1] - c) < 2) return false;
-      if (r < n - 1 && col[r + 1] >= 0 && Math.abs(col[r + 1] - c) < 2) return false;
+    var RZ = maschere(n, zone), TUTTE = (1 << n) - 1, base = new Int32Array(n);
+    for (var r = 0; r < n; r++) {
+      base[r] = TUTTE;
+      if (escluse) for (var c = 0; c < n; c++) if (escluse[r * n + c]) base[r] &= ~(1 << c);
+    }
+    var col = new Int8Array(n).fill(-1), conteggio = 0, prima = null, ammesse = new Int32Array(n);
+    function valutaRighe(usataC, usataZ) {
+      // colonne ammesse per ogni riga libera; restituisce false se una riga resta vuota
+      var zoneLibere = 0;
+      for (var z = 0; z < n; z++) if (!(usataZ & (1 << z))) zoneLibere |= 1 << z;
+      for (var r2 = 0; r2 < n; r2++) {
+        if (col[r2] >= 0) continue;
+        var m = base[r2] & ~usataC, perZona = 0;
+        if (r2 > 0 && col[r2 - 1] >= 0) m &= ~(7 << col[r2 - 1] >> 1);
+        if (r2 < n - 1 && col[r2 + 1] >= 0) m &= ~(7 << col[r2 + 1] >> 1);
+        for (var z2 = 0; z2 < n; z2++) if (zoneLibere & (1 << z2)) perZona |= RZ[r2][z2];
+        m &= perZona;
+        if (!m) return false;
+        ammesse[r2] = m;
+      }
       return true;
     }
-    function cerca() {
-      var migliore = -1, min = 99, scelte = null;
-      for (var r = 0; r < n; r++) {
-        if (col[r] >= 0) continue;
-        var s = [];
-        for (var c = 0; c < n; c++) if (ammessa(r, c)) s.push(c);
-        if (s.length < min) { min = s.length; migliore = r; scelte = s; if (min === 0) return false; }
+    function cerca(usataC, usataZ, poste) {
+      if (poste === n) {
+        if (diversaDa && col.every(function (c2, r3) { return c2 === diversaDa[r3]; })) return false;
+        conteggio++; if (!prima) prima = Array.from(col);
+        return conteggio >= limite;
       }
-      if (migliore < 0) { conteggio++; if (!prima) prima = Array.from(col); return conteggio >= limite; }
-      for (var k = 0; k < scelte.length; k++) {
-        var c2 = scelte[k], z = zone[migliore * n + c2];
-        col[migliore] = c2; usataC |= 1 << c2; usataZ |= 1 << z;
-        var fine = cerca();
-        col[migliore] = -1; usataC &= ~(1 << c2); usataZ &= ~(1 << z);
+      if (!valutaRighe(usataC, usataZ)) return false;
+      // ogni colonna e ogni boschetto liberi devono avere ancora un posto
+      var copreC = 0, migliore = -1, min = 99, tipo = 0, rr, z;
+      for (rr = 0; rr < n; rr++) if (col[rr] < 0) {
+        copreC |= ammesse[rr];
+        var k = CONTA[ammesse[rr]];
+        if (k < min) { min = k; migliore = rr; tipo = 0; }
+      }
+      if ((copreC | usataC) !== TUTTE) return false;
+      for (z = 0; z < n; z++) {
+        if (usataZ & (1 << z)) continue;
+        var tot = 0;
+        for (rr = 0; rr < n; rr++) if (col[rr] < 0) tot += CONTA[ammesse[rr] & RZ[rr][z]];
+        if (!tot) return false;
+        if (tot < min) { min = tot; migliore = z; tipo = 1; }
+      }
+      var scelte = [];
+      if (tipo === 0) {
+        for (var c3 = 0; c3 < n; c3++) if (ammesse[migliore] & (1 << c3)) scelte.push([migliore, c3]);
+      } else {
+        for (rr = 0; rr < n; rr++) if (col[rr] < 0) {
+          var mm = ammesse[rr] & RZ[rr][migliore];
+          for (var c4 = 0; c4 < n; c4++) if (mm & (1 << c4)) scelte.push([rr, c4]);
+        }
+      }
+      for (var s = 0; s < scelte.length; s++) {
+        var r4 = scelte[s][0], c5 = scelte[s][1], z5 = zone[r4 * n + c5];
+        col[r4] = c5;
+        var fine = cerca(usataC | (1 << c5), usataZ | (1 << z5), poste + 1);
+        col[r4] = -1;
         if (fine) return true;
       }
       return false;
     }
+    var uc = 0, uz = 0, poste = 0;
     if (fissi) {
-      for (var r = 0; r < n; r++) if (fissi[r] >= 0) {
-        if (!ammessa(r, fissi[r])) return { conteggio: 0, soluzione: null };
-        col[r] = fissi[r]; usataC |= 1 << fissi[r]; usataZ |= 1 << zone[r * n + fissi[r]];
+      for (r = 0; r < n; r++) if (fissi[r] >= 0) {
+        var cf = fissi[r], zf = zone[r * n + cf];
+        if (uc & (1 << cf) || uz & (1 << zf) || !(base[r] & (1 << cf)) ||
+          (r > 0 && col[r - 1] >= 0 && Math.abs(col[r - 1] - cf) < 2)) return { conteggio: 0, soluzione: null };
+        col[r] = cf; uc |= 1 << cf; uz |= 1 << zf; poste++;
       }
     }
-    cerca();
+    cerca(uc, uz, poste);
     return { conteggio: conteggio, soluzione: prima };
   }
 
@@ -181,12 +236,10 @@
     for (var tentativo = 0; tentativo < 200; tentativo++) {
       var sol = disposizioneCasuale(n, casuale);
       var zone = cresciZone(n, sol, casuale);
-      for (var ritocco = 0; ritocco < 60; ritocco++) {
-        var r = contaSoluzioni(n, zone, 2);
-        if (r.conteggio === 1) return { n: n, seed: seed, zone: Array.from(zone), soluzione: sol };
-        var alt = r.soluzione;
-        if (alt.join() === sol.join()) alt = contaSoluzioniDiversa(n, zone, sol);
-        if (!alt) break;
+      for (var ritocco = 0; ritocco < 40 * n; ritocco++) {
+        // una sola ricerca: esiste una soluzione diversa da quella voluta?
+        var alt = contaSoluzioni(n, zone, 1, null, null, sol).soluzione;
+        if (!alt) return { n: n, seed: seed, zone: Array.from(zone), soluzione: sol };
         var righe = mescola(Array.from({ length: n }, function (_, i) { return i; }), casuale), fatto = false;
         for (var k = 0; k < n && !fatto; k++) {
           var rr = righe[k];
@@ -204,16 +257,6 @@
     }
     return null;
   }
-  function contaSoluzioniDiversa(n, zone, sol) {
-    // cerca una soluzione diversa da sol vietando, a turno, una sua casella
-    for (var r = 0; r < n; r++) {
-      var escl = new Uint8Array(n * n); escl[r * n + sol[r]] = 1;
-      var x = contaSoluzioni(n, zone, 1, escl);
-      if (x.conteggio) return x.soluzione;
-    }
-    return null;
-  }
-
   // =========================================================================
   // 5. Deduzioni logiche
   // =========================================================================
@@ -222,7 +265,7 @@
    * Le esclusioni dovute ai panda già posati (stessa riga, colonna, boschetto,
    * caselle che li toccano) si ricavano sempre in automatico.
    */
-  var NOMI_ZONA = 'ABCDEFGHIJ';
+  var NOMI_ZONA = 'ABCDEFGHIJKL';
   function nomeZona(z) { return 'boschetto ' + NOMI_ZONA[z]; }
   function nomeCasella(g, p) { return 'riga ' + (g.RIGA[p] + 1) + ', colonna ' + (g.COLONNA[p] + 1); }
   function sigla(g, p) { return 'R' + (g.RIGA[p] + 1) + 'C' + (g.COLONNA[p] + 1); }

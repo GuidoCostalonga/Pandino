@@ -68,8 +68,8 @@ async function mettiTutti(p, l) {
   await p.click('#btn-continua');
   await p.waitForSelector('#s-gioco:not([hidden])');
   const l1 = await liv(p, 1), s1 = soluzione(l1);
-  const fuori = [...Array(25).keys()].filter(q => !s1.includes(q));
-  ok((await stato(p)).n === 5 && await p.locator('#griglia .cella').count() === 25, 'Livello 1: griglia 5×5 con 5 boschetti');
+  const fuori = [...Array(l1.n * l1.n).keys()].filter(q => !s1.includes(q));
+  ok((await stato(p)).n === 10 && await p.locator('#griglia .cella').count() === 100, 'Livello 1: griglia 10×10 con 10 boschetti');
   await cella(p, fuori[0]).click();
   ok((await stato(p)).stato[fuori[0]] === '1', 'Primo tocco: segno ✕');
   await cella(p, fuori[0]).click();
@@ -82,7 +82,7 @@ async function mettiTutti(p, l) {
   ok((await stato(p)).stato[fuori[0]] === '1', 'Ctrl+Y ripristina');
   await cella(p, 0).focus();
   await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowDown');
-  ok((await stato(p)).sel === 6, 'Le frecce spostano la selezione');
+  ok((await stato(p)).sel === 11, 'Le frecce spostano la selezione');
   const libera = fuori.find(q => (q !== fuori[0]));
   await cella(p, libera).focus();
   await p.keyboard.press('x');
@@ -96,7 +96,7 @@ async function mettiTutti(p, l) {
   const et = await cella(p, s1[0]).getAttribute('aria-label');
   ok(/boschetto [A-J]: panda/.test(et), 'Nome accessibile: «' + et + '»');
   // trascinamento: segna più caselle
-  const daSegnare = fuori.filter(q => q !== fuori[0] && Math.floor(q / 5) === Math.floor(fuori[1] / 5)).slice(0, 3);
+  const daSegnare = fuori.filter(q => q !== fuori[0] && Math.floor(q / l1.n) === Math.floor(fuori[1] / l1.n)).slice(0, 3);
   if (daSegnare.length >= 2) {
     const a = await cella(p, daSegnare[0]).boundingBox(), b = await cella(p, daSegnare[daSegnare.length - 1]).boundingBox();
     await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down();
@@ -127,8 +127,8 @@ async function mettiTutti(p, l) {
   await p.click('#btn-vai-livelli');
   ok(await p.$eval('.livello-btn[data-id="1"]', b => b.classList.contains('completato')), 'Il livello 1 risulta completato');
   ok(await p.$eval('.livello-btn[data-id="4"]', b => b.disabled), 'Il livello 4 è ancora bloccato');
-  ok(await p.locator('#capitoli button').count() === 6, 'Sei capitoli, dal 5×5 al 10×10');
-  ok(await p.locator('#pagine button').count() === 2, 'Paginazione: il capitolo 1 ha 2 pagine da 50');
+  ok(await p.locator('#capitoli button').count() === 3, 'Tre capitoli: 10×10, 11×11, 12×12');
+  ok(await p.locator('#pagine button').count() === 9, 'Paginazione: il capitolo 1 ha 9 pagine da 50');
   await p.fill('#cerca-livello', '600'); await p.click('#form-vai button');
   ok(/bloccato/.test(await p.textContent('#conteggio-livelli')), 'La ricerca porta al livello 600 e dice che è bloccato');
   await p.selectOption('#filtro', 'completati'); await p.click('#capitoli button >> nth=0');
@@ -188,7 +188,7 @@ async function mettiTutti(p, l) {
   await conProgressi(p, base, { completati: { 1049: { punti: 1, tempo: 1 } }, inCorso: {}, ultimo: 1050 });
   await p.click('#btn-continua');
   const l1050 = await liv(p, 1050);
-  ok(l1050.n === 10, 'Livello 1050: griglia 10×10, ' + l1050.fascia);
+  ok(l1050.n === 12, 'Livello 1050: griglia 12×12, ' + l1050.fascia);
   let passi = 0;
   while (!(await stato(p)).finita && passi < 300) {
     await p.click('#btn-suggerimento');
@@ -197,7 +197,7 @@ async function mettiTutti(p, l) {
     passi++;
   }
   s = await stato(p);
-  ok(s.finita && s.cuori === 3, 'Livello ' + l1050.fascia + ' 10×10 risolto seguendo solo i suggerimenti (' + passi + ' passi, nessun cuore perso)');
+  ok(s.finita && s.cuori === 3, 'Livello ' + l1050.fascia + ' 12×12 risolto seguendo solo i suggerimenti (' + passi + ' passi, nessun cuore perso)');
   await p.waitForSelector('#d-fine[open]');
   await foto(p, '07-esperto-con-aiuti');
   await p.click('#btn-vai-livelli');
@@ -206,12 +206,12 @@ async function mettiTutti(p, l) {
   const giocate = [];
   for (let k = 0; k < 2; k++) {
     await p.goto(base); await p.click('#btn-libera');
-    await p.selectOption('#libera-n', '8'); await p.selectOption('#libera-fascia', 'Difficile');
+    await p.selectOption('#libera-n', '11'); await p.selectOption('#libera-fascia', 'Difficile');
     await p.fill('#libera-seed', '4242');
     const t0 = Date.now();
     await p.click('#btn-genera');
     await p.waitForSelector('#s-gioco:not([hidden])', { timeout: 10000 });
-    if (!k) ok(true, 'Partita libera 8×8 difficile generata in ' + (Date.now() - t0) + ' ms');
+    if (!k) ok(true, 'Partita libera 11×11 difficile generata in ' + (Date.now() - t0) + ' ms');
     giocate.push(JSON.stringify(await p.evaluate(() => { const c = [...document.querySelectorAll('#griglia .cella')]; return c.map(x => x.className).join('|'); })));
   }
   ok(giocate[0] === giocate[1], 'Partita libera: stesso codice, stesso livello');
@@ -230,7 +230,7 @@ async function mettiTutti(p, l) {
     const larg = await m.p.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
     ok(larg[0] <= larg[1], nome + ': nessuno scorrimento orizzontale (' + larg.join(' ≤ ') + ')');
     const lato = await m.p.$eval('#griglia', el => el.getBoundingClientRect().width / window.Pandino.partita().n);
-    ok(lato >= 28, nome + ': caselle di ' + Math.round(lato) + ' px');
+    ok(lato >= 22, nome + ': caselle di ' + Math.round(lato) + ' px');
     await foto(m.p, nome, true);
     await m.ctx.close();
   }

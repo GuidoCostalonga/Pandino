@@ -18,7 +18,7 @@
   var M = window.PandinoMotore, P = window.PandinoPanda;
   var $ = function (id) { return document.getElementById(id); };
   var FATTORE = { Facile: 1, Medio: 1.4, Difficile: 1.8, Esperto: 2.4 };
-  var NOMI_CAPITOLO = ['Germogli', 'Radura', 'Boschetto', 'Foresta', 'Montagna', 'Vetta'];
+  var NOMI_CAPITOLO = ['Foresta', 'Montagna', 'Vetta'];
 
   // =====================================================================
   // A. Catalogo
@@ -392,7 +392,7 @@
     var el = celle[p], st = G.stato[p], h = '';
     if (imp.lettere && el.dataset.lettera) h += '<span class="lettera" aria-hidden="true">' + el.dataset.lettera + '</span>';
     if (st === 2) {
-      h += P.uso(G.zone[p] + 1);
+      h += P.uso(G.zone[p] % 10 + 1);
       if (conflitto(p) && imp.conflitti) h += '<span class="allarme" aria-hidden="true">!</span>';
       else if (sbagliata(p) && G.controllate[p]) h += '<span class="allarme" aria-hidden="true">?</span>';
     } else if (st === 1) h += '<span class="segno" aria-hidden="true">✕</span>';
@@ -750,7 +750,7 @@
     if (imp.tema === 'auto') root.removeAttribute('data-tema'); else root.setAttribute('data-tema', imp.tema);
     if (G && !$('s-gioco').hidden) ridisegna();
   }
-  /** Esempio risolto nella finestra delle regole: il primo livello 5×5. */
+  /** Esempio risolto nella finestra delle regole: il primo livello del catalogo. */
   function disegnaEsempio() {
     var l = LIVELLI[0], n = l.n, h = '<div class="griglia" style="--n:' + n + '">';
     for (var p = 0; p < n * n; p++) {
@@ -759,7 +759,7 @@
       if (c > 0 && l.zone[p - 1] !== z) cl += ' zl';
       if (c < n - 1 && l.zone[p + 1] !== z) cl += ' zr';
       if (r < n - 1 && l.zone[p + n] !== z) cl += ' zb';
-      h += '<div class="' + cl + '">' + (l.soluzione[r] === c ? P.uso(z + 1) : '') + '</div>';
+      h += '<div class="' + cl + '">' + (l.soluzione[r] === c ? P.uso(z % 10 + 1) : '') + '</div>';
     }
     $('esempio').innerHTML = h + '</div>';
   }
