@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Pagina raggiungibile da chi conosce l'indirizzo, ma da non indicizzare:
+     i motori di ricerca non la mostrano nei risultati e non seguono i suoi collegamenti. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="bingbot" content="noindex, nofollow">
+<title>Pandino</title>
+<meta name="description" content="Pandino, il Sudoku dei panda: 1.300 livelli su griglie 4×4, 6×6 e 9×9, modalità classica e variante a tessere Panda Pop.">
+<meta name="theme-color" content="#2a7445">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='24' cy='30' r='13'/%3E%3Ccircle cx='76' cy='30' r='13'/%3E%3Cellipse cx='50' cy='57' rx='36' ry='32' fill='%23fff' stroke='%23000' stroke-width='4'/%3E%3Cellipse cx='36' cy='54' rx='8' ry='11'/%3E%3Cellipse cx='64' cy='54' rx='8' ry='11'/%3E%3Cellipse cx='50' cy='68' rx='6' ry='4'/%3E%3C/svg%3E">
+<style>
+/*STILE*/
+</style>
+</head>
+<body>
+<div id="simboli"></div>
+<header class="testata">
+  <div class="marchio"><span id="marchio-panda"></span><span>Pandino</span></div>
+  <div class="spazio"></div>
+  <button class="btn piccolo" type="button" data-apri="d-legenda" aria-haspopup="dialog"><span class="ico" aria-hidden="true">🐼</span><span class="testo-lungo">Legenda</span></button>
+  <button class="btn piccolo" type="button" data-apri="d-impostazioni" aria-haspopup="dialog"><span class="ico" aria-hidden="true">⚙️</span><span class="nascosto">Impostazioni</span></button>
+  <button class="btn piccolo" type="button" data-apri="d-aiuto" aria-haspopup="dialog"><span class="ico" aria-hidden="true">?</span><span class="nascosto">Come si gioca</span></button>
+</header>
+
+<main id="contenuto">
+  <noscript><p class="scheda">Pandino funziona con JavaScript: attivalo nel browser per giocare.</p></noscript>
+
+  <!-- ============================== INIZIO ============================== -->
+  <section id="s-inizio" class="schermata inizio" aria-labelledby="t-inizio">
+    <div class="scheda eroe">
+      <div>
+        <h1 id="t-inizio">Pandino</h1>
+        <p>Il Sudoku dei panda. Ogni panda compare una sola volta in ogni riga, in ogni colonna e in ogni blocco. Nove panda diversi per specie, espressione, posa e accessorio.</p>
+      </div>
+      <div class="sfilata" id="sfilata" aria-label="I nove panda"></div>
+    </div>
+
+    <div class="scheda">
+      <h2 style="margin-top:0">Scegli la modalità</h2>
+      <div class="modi" role="group" aria-label="Modalità di gioco">
+        <button type="button" class="modo" data-modo="c" aria-pressed="true">
+          <span class="etichetta">Regole tradizionali</span>
+          <strong>Sudoku classico</strong>
+          <span>Riempi la griglia una casella alla volta. Le caselle iniziali non si toccano e i panda restano al loro posto fino alla fine.</span>
+        </button>
+        <button type="button" class="modo" data-modo="p" aria-pressed="false">
+          <span class="etichetta">Variante arcade a tessere</span>
+          <strong>Panda Pop</strong>
+          <span>I panda arrivano a gruppi, su tessere da 1 a 5 caselle. Posale rispettando le regole del Sudoku: quando una riga, una colonna o un blocco si riempie, i suoi panda scoppiano e lasciano spazio. Punti e combo. Obiettivo: liberare tutti i panda di partenza.</span>
+        </button>
+      </div>
+      <h2>Scegli la griglia</h2>
+      <div class="modi taglie" role="group" aria-label="Dimensione della griglia">
+        <button type="button" class="modo" data-n="4" aria-pressed="false"><strong>4×4</strong><span>Quattro panda, blocchi 2×2. Per iniziare.</span></button>
+        <button type="button" class="modo" data-n="6" aria-pressed="false"><strong>6×6</strong><span>Sei panda, blocchi 2×3.</span></button>
+        <button type="button" class="modo" data-n="9" aria-pressed="true"><strong>9×9</strong><span>Nove panda, blocchi 3×3. La griglia standard.</span></button>
+      </div>
+    </div>
+
+    <div class="scheda">
+      <div class="azioni">
+        <button type="button" class="btn primario" id="btn-continua"></button>
+        <button type="button" class="btn primario" id="btn-livelli">Scegli il livello</button>
+        <button type="button" class="btn" id="btn-libera">Partita libera</button>
+      </div>
+      <h2>I tuoi progressi</h2>
+      <div class="riepilogo" id="riepilogo"></div>
+      <p class="nota-stima" id="prossimi"></p>
+    </div>
+  </section>
+
+  <!-- ============================== LIVELLI ============================= -->
+  <section id="s-livelli" class="schermata" aria-labelledby="t-livelli" hidden>
+    <div class="testa-finestra">
+      <h2 id="t-livelli">Livelli · <span id="livelli-modo"></span></h2>
+      <button type="button" class="btn piccolo" data-vai="s-inizio">← Inizio</button>
+    </div>
+    <p class="nota-stima">La difficoltà è una <strong>stima</strong>: Pandino risolve ogni livello con le sole tecniche logiche, senza tentativi, e guarda la più impegnativa che serve. Non conta soltanto il numero di caselle vuote. Ogni livello ha una sola soluzione, verificata.</p>
+    <div class="capitoli" id="taglie-livelli" role="group" aria-label="Dimensione della griglia"></div>
+    <div class="capitoli" id="capitoli" role="group" aria-label="Capitoli"></div>
+    <div class="filtri">
+      <form id="form-vai" class="filtri" style="margin:0">
+        <label>Vai al livello
+          <input id="cerca-livello" type="number" inputmode="numeric" min="1" placeholder="numero">
+        </label>
+        <button class="btn" type="submit">Vai</button>
+      </form>
+      <label>Mostra
+        <select id="filtro">
+          <option value="tutti">Tutti i livelli</option>
+          <option value="sbloccati">Da giocare (sbloccati)</option>
+          <option value="in-corso">In corso</option>
+          <option value="completati">Completati</option>
+        </select>
+      </label>
+    </div>
+    <p id="conteggio-livelli" class="nota-stima" aria-live="polite"></p>
+    <ul class="elenco-livelli" id="elenco-livelli"></ul>
+    <nav class="pagine" id="pagine" aria-label="Pagine dei livelli"></nav>
+  </section>
+
+  <!-- ============================== GIOCO =============================== -->
+  <section id="s-gioco" class="schermata" aria-labelledby="t-gioco" hidden>
+    <div class="gioco">
+      <div class="colonna-griglia">
+        <div class="info-livello">
+          <div>
+            <h2 id="t-gioco"></h2>
+            <div class="meta" id="meta-livello"></div>
+          </div>
+          <div class="contatori">
+            <div class="contatore"><span>Tempo</span><output id="tempo">0:00</output></div>
+            <div class="contatore"><span>Punti</span><output id="punti">0</output></div>
+            <div class="contatore solo-pop"><span>Combo</span><output id="combo" class="combo">×1</output></div>
+            <div class="contatore solo-pop"><span>Da liberare</span><output id="da-liberare">0</output></div>
+            <div class="contatore solo-classico"><span>Fatto</span><output id="percentuale">0%</output></div>
+          </div>
+        </div>
+        <div class="cornice" id="cornice">
+          <div class="griglia" id="griglia" role="grid" aria-describedby="istruzioni-griglia"></div>
+          <div class="pausa-velo" id="velo-pausa" hidden>
+            <div>
+              <p style="font-size:1.3rem;font-weight:800;margin:0 0 8px">⏸ In pausa</p>
+              <p style="margin:0 0 12px">La griglia è nascosta e il tempo è fermo.</p>
+              <button type="button" class="btn primario" id="btn-riprendi">Riprendi</button>
+            </div>
+          </div>
+        </div>
+        <p id="istruzioni-griglia" class="nascosto"></p>
+      </div>
+
+      <div class="pannello">
+        <div class="tavolozza solo-classico" id="tavolozza" role="group" aria-label="Scegli il panda da inserire"></div>
+        <div class="vassoio solo-pop" id="vassoio" role="group" aria-label="Tessere da posare"></div>
+        <div class="strumenti" role="toolbar" aria-label="Strumenti">
+          <button type="button" class="btn solo-classico" id="btn-matita" aria-pressed="false" title="Matita (M)"><span class="ico" aria-hidden="true">✏️</span>Matita</button>
+          <button type="button" class="btn" id="btn-suggerimento" title="Suggerimento (S)"><span class="ico" aria-hidden="true">💡</span>Aiuto</button>
+          <button type="button" class="btn" id="btn-annulla" title="Annulla (Ctrl+Z)"><span class="ico" aria-hidden="true">↶</span>Annulla</button>
+          <button type="button" class="btn" id="btn-ripristina" title="Ripristina (Ctrl+Y)"><span class="ico" aria-hidden="true">↷</span>Ripristina</button>
+          <button type="button" class="btn solo-classico" id="btn-cancella" title="Cancella (Canc)"><span class="ico" aria-hidden="true">⌫</span>Cancella</button>
+          <button type="button" class="btn solo-classico" id="btn-controlla" title="Controlla gli errori"><span class="ico" aria-hidden="true">🔍</span>Controlla</button>
+          <button type="button" class="btn solo-pop" id="btn-rinnova" title="Rinnova le tessere (R)"><span class="ico" aria-hidden="true">🔄</span>Rinnova</button>
+          <button type="button" class="btn" id="btn-pausa" aria-pressed="false" title="Pausa (P)"><span class="ico" aria-hidden="true">⏸</span>Pausa</button>
+          <button type="button" class="btn" id="btn-nuova" title="Ricomincia il livello"><span class="ico" aria-hidden="true">⟲</span>Nuova</button>
+        </div>
+        <div class="opzione solo-classico" style="background:none;padding:0">
+          <input type="checkbox" id="rapido-auto">
+          <label for="rapido-auto">Mostra i candidati possibili<small>Pandino scrive in piccolo i panda che le regole permettono ancora in ogni casella vuota.</small></label>
+        </div>
+        <div id="messaggio" class="messaggio" hidden></div>
+        <div class="stato" id="stato"></div>
+        <div class="azioni">
+          <button type="button" class="btn" id="btn-esci">☰ Livelli</button>
+          <button type="button" class="btn" data-apri="d-legenda" aria-haspopup="dialog">🐼 Legenda</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="annuncio" class="nascosto" aria-live="assertive"></div>
+
+<!-- ============================== FINESTRE ============================== -->
+<dialog id="d-legenda" aria-labelledby="t-legenda">
+  <div class="finestra">
+    <div class="testa-finestra"><h2 id="t-legenda">Legenda dei panda</h2><button class="btn piccolo" type="button" data-chiudi>Chiudi</button></div>
+    <p style="margin:0">Ogni panda corrisponde a un numero. Per riconoscerlo al volo, lega il numero a una proprietà fissa: la specie (gigante o rosso), l'espressione, la posa o l'accessorio. Nelle griglie 4×4 e 6×6 si usano solo i primi quattro o sei panda.</p>
+    <ul class="legenda" id="legenda"></ul>
+    <div class="opzione">
+      <input type="checkbox" id="leg-chiaro">
+      <label for="leg-chiaro">Numeri in chiaro<small>Nella griglia il numero diventa grande e il panda resta piccolo nell'angolo.</small></label>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="d-impostazioni" aria-labelledby="t-impostazioni">
+  <form class="finestra" method="dialog" id="form-impostazioni">
+    <div class="testa-finestra"><h2 id="t-impostazioni">Impostazioni</h2><button class="btn piccolo" value="chiudi">Chiudi</button></div>
+    <div class="opzioni">
+      <fieldset>
+        <legend>Indice di decodifica sui panda</legend>
+        <label class="opzione"><input type="radio" name="indice" value="numero"><span>Numero<small>Ogni panda porta il suo numero: la scelta più leggibile.</small></span></label>
+        <label class="opzione"><input type="radio" name="indice" value="puntini"><span>Puntini<small>Il numero diventa una faccia di dado.</small></span></label>
+        <label class="opzione"><input type="radio" name="indice" value="nessuno"><span>Nessuno: sfida visiva<small>Solo i panda, senza indici: il carico di memoria visiva cresce di proposito. Gli screen reader continuano a leggere il numero.</small></span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Errori rispetto alla soluzione (classico)</legend>
+        <label class="opzione"><input type="radio" name="errori" value="subito"><span>Segnala subito<small>Una casella con un panda sbagliato viene marcata appena la riempi.</small></span></label>
+        <label class="opzione"><input type="radio" name="errori" value="controllo"><span>Solo quando premo «Controlla»<small>Nessun aiuto finché non lo chiedi tu.</small></span></label>
+      </fieldset>
+      <label class="opzione"><input type="checkbox" name="conflitti"><span>Mostra i conflitti con le regole<small>Due panda uguali nella stessa riga, colonna o blocco vengono marcati con righe diagonali e il segno «!».</small></span></label>
+      <label class="opzione"><input type="checkbox" name="auto"><span>Mostra i candidati possibili<small>In ogni casella vuota compaiono in piccolo i panda ancora ammessi.</small></span></label>
+      <label class="opzione"><input type="checkbox" name="uguali"><span>Evidenzia i panda uguali<small>Le caselle con lo stesso panda di quella selezionata vengono cerchiate.</small></span></label>
+      <label class="opzione"><input type="checkbox" name="chiaro"><span>Numeri in chiaro<small>Il numero diventa grande e il panda piccolo.</small></span></label>
+      <label class="opzione"><input type="checkbox" name="animazioni"><span>Animazioni<small>Volo dei panda, schiacciamento all'atterraggio, scoppi.</small></span></label>
+      <label class="opzione"><input type="checkbox" name="suoni"><span>Suoni<small>Brevi suoni generati dal browser, mai prima che tu abbia toccato il gioco.</small></span></label>
+      <fieldset>
+        <legend>Tema</legend>
+        <label class="opzione"><input type="radio" name="tema" value="auto"><span>Come il dispositivo</span></label>
+        <label class="opzione"><input type="radio" name="tema" value="chiaro"><span>Chiaro</span></label>
+        <label class="opzione"><input type="radio" name="tema" value="scuro"><span>Scuro</span></label>
+      </fieldset>
+      <button type="button" class="btn" id="btn-azzera">Cancella tutti i progressi…</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="d-aiuto" aria-labelledby="t-aiuto">
+  <div class="finestra">
+    <div class="testa-finestra"><h2 id="t-aiuto">Come si gioca</h2><button class="btn piccolo" type="button" data-chiudi>Chiudi</button></div>
+    <h3>La regola</h3>
+    <p>Ogni panda deve comparire <strong>una sola volta</strong> in ogni riga, in ogni colonna e in ogni blocco. Le griglie sono tre: 4×4 con blocchi 2×2, 6×6 con blocchi 2×3, 9×9 con blocchi 3×3.</p>
+    <h3>Sudoku classico</h3>
+    <p>Tocca una casella, poi il panda. Le caselle iniziali hanno lo sfondo più scuro e non si cambiano. Con la <strong>matita</strong> scrivi promemoria in piccolo.</p>
+    <h3>Panda Pop, la variante arcade a tessere</h3>
+    <p>Hai tre tessere, ognuna con 1–5 panda. Scegline una e posala sulla griglia, toccando la casella dove va il suo angolo in alto a sinistra, oppure trascinandola. La tessera entra solo se le caselle sono libere, se nessun panda si ripete in riga, colonna o blocco e se la griglia resta completabile. Quando una riga, una colonna o un blocco si riempie, i suoi panda scoppiano e le caselle tornano libere: 90 punti per gruppo, moltiplicati per i gruppi chiusi insieme e per la combo, che cresce a ogni posa che fa scoppiare qualcosa. Vinci quando hai liberato tutti i panda di partenza, segnati con la stellina. Se nessuna tessera entra più, Pandino le rinnova da solo: le nuove tessere entrano sempre.</p>
+    <h3>Tastiera</h3>
+    <table class="tabella">
+      <tr><th scope="row"><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd></th><td>Spostati nella griglia</td></tr>
+      <tr><th scope="row"><kbd>1</kbd>…<kbd>9</kbd></th><td>Classico: metti il panda con quel numero. Panda Pop: scegli la tessera 1, 2 o 3</td></tr>
+      <tr><th scope="row"><kbd>Invio</kbd> o <kbd>Spazio</kbd></th><td>Panda Pop: posa la tessera nella casella selezionata</td></tr>
+      <tr><th scope="row"><kbd>Canc</kbd> <kbd>⌫</kbd> <kbd>0</kbd></th><td>Svuota la casella (classico)</td></tr>
+      <tr><th scope="row"><kbd>M</kbd> · <kbd>S</kbd> · <kbd>P</kbd> · <kbd>R</kbd></th><td>Matita · suggerimento · pausa · rinnova le tessere</td></tr>
+      <tr><th scope="row"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></th><td>Annulla</td></tr>
+      <tr><th scope="row"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Y</kbd> oppure <kbd>Maiusc</kbd>+<kbd>Z</kbd></th><td>Ripristina</td></tr>
+      <tr><th scope="row"><kbd>Esc</kbd></th><td>Chiudi una finestra o togli la selezione</td></tr>
+    </table>
+    <h3>Errori</h3>
+    <p>Un <strong>conflitto</strong> (righe diagonali e «!») vuol dire due panda uguali nella stessa riga, colonna o blocco. Una casella <strong>sbagliata</strong> (bordo tratteggiato e «✕») rispetta le regole ma non corrisponde alla soluzione. Il confronto con la soluzione è immediato: non serve risolvere di nuovo la griglia.</p>
+    <h3>Suggerimenti</h3>
+    <p>Il pulsante Aiuto propone una mossa sicura e la spiega. Tecniche conosciute: unico candidato (Naked Single), unico posto (Hidden Single), candidati bloccati (Pointing e Claiming), coppie e terne, X-Wing e Swordfish. Se nessuna basta, Pandino lo dice e non tira a indovinare: puoi chiedere di rivelare una casella.</p>
+    <h3>Salvataggio</h3>
+    <p>La partita si salva da sola in questo browser a ogni mossa. Nessun dato lascia il tuo dispositivo.</p>
+  </div>
+</dialog>
+
+<dialog id="d-conferma" aria-labelledby="t-conferma" aria-describedby="x-conferma">
+  <form class="finestra" method="dialog">
+    <h2 id="t-conferma"></h2>
+    <p id="x-conferma" style="margin:0"></p>
+    <div class="azioni">
+      <button class="btn primario" value="si" id="conferma-si"></button>
+      <button class="btn" value="no" id="conferma-no" autofocus>Annulla</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="d-vittoria" aria-labelledby="t-vittoria">
+  <div class="finestra">
+    <h2 id="t-vittoria">Livello completato!</h2>
+    <div id="x-vittoria"></div>
+    <div class="azioni">
+      <button class="btn primario" type="button" id="btn-successivo">Livello successivo →</button>
+      <button class="btn" type="button" id="btn-rigioca">Rigioca</button>
+      <button class="btn" type="button" id="btn-vai-livelli">Tutti i livelli</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="d-libera" aria-labelledby="t-libera">
+  <div class="finestra">
+    <div class="testa-finestra"><h2 id="t-libera">Partita libera</h2><button class="btn piccolo" type="button" data-chiudi>Chiudi</button></div>
+    <div id="libera-scelta">
+      <p style="margin-top:0">Pandino crea al momento un puzzle nuovo, con una sola soluzione verificata. Con lo stesso codice ottieni sempre la stessa partita.</p>
+      <div class="filtri">
+        <label>Griglia
+          <select id="libera-n"><option value="9">9×9</option><option value="6">6×6</option><option value="4">4×4</option></select>
+        </label>
+        <label>Difficoltà
+          <select id="libera-fascia"></select>
+        </label>
+        <label>Codice (facoltativo)
+          <input id="libera-seed" type="number" inputmode="numeric" min="1" max="4294967295" placeholder="casuale">
+        </label>
+        <button type="button" class="btn primario" id="btn-genera">Crea la partita</button>
+      </div>
+    </div>
+    <div id="libera-attesa" class="caricamento" hidden role="status">
+      <div class="rotella" aria-hidden="true"></div>
+      <p style="margin:0" id="libera-testo">Sto preparando la partita…</p>
+    </div>
+  </div>
+</dialog>
+
+<footer class="piede">Pandino · gioco gratuito, senza pubblicità e senza raccolta di dati: i progressi restano soltanto nel tuo browser.</footer>
+
+<script id="codice-motore">
+/*MOTORE*/
+</script>
+<script>
+/*PANDA*/
+</script>
+<script id="dati-livelli" type="application/json">/*DATI*/</script>
+<script>
+/*APP*/
+</script>
+</body>
+</html>
