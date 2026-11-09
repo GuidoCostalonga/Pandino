@@ -323,12 +323,12 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
             </div>
           </div>
         </div>
-        <p id="istruzioni-griglia" class="nascosto">Frecce per spostarti. Spazio o Invio: segno, poi panda, poi casella vuota. P mette o toglie un panda, X mette o toglie un segno, Canc svuota, S chiede un suggerimento, Ctrl più Z annulla.</p>
+        <p id="istruzioni-griglia" class="nascosto">Frecce per spostarti. Spazio mette o toglie il segno, Invio mette o toglie il panda. P mette o toglie un panda, X mette o toglie un segno, Canc svuota, S chiede un suggerimento, Ctrl più Z annulla.</p>
       </div>
 
       <div class="pannello">
         <div class="strumento" role="radiogroup" aria-label="Che cosa fa un tocco sulla casella">
-          <button type="button" class="btn" role="radio" data-strumento="ciclo" aria-checked="true"><span aria-hidden="true">✕ → 🐼</span><small>Tocco: segno, poi panda</small></button>
+          <button type="button" class="btn" role="radio" data-strumento="doppio" aria-checked="true"><span aria-hidden="true">✕ · 🐼🐼</span><small>Tocco ✕, doppio tocco panda</small></button>
           <button type="button" class="btn" role="radio" data-strumento="panda" aria-checked="false"><span aria-hidden="true">🐼</span><small>Solo panda</small></button>
           <button type="button" class="btn" role="radio" data-strumento="segno" aria-checked="false"><span aria-hidden="true">✕</span><small>Solo segni</small></button>
         </div>
@@ -367,7 +367,7 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
     </ul>
     <p>Ogni livello ha una sola soluzione e si trova con il ragionamento.</p>
     <h3>Come si gioca</h3>
-    <p>Tocca una casella una volta per segnarla con ✕ («qui no»), una seconda volta per mettere il panda, una terza per svuotarla. Puoi anche scegliere «Solo panda» o «Solo segni». Trascinando il dito o il mouse su più caselle le segni tutte con ✕.</p>
+    <p>Un tocco su una casella la segna con ✕ («qui no»); un altro tocco toglie la ✕. Per mettere il panda tocca <strong>due volte veloce</strong> la stessa casella (doppio clic con il mouse). Un tocco su un panda lo toglie. Puoi anche scegliere «Solo panda» o «Solo segni». Trascinando il dito o il mouse su più caselle le segni tutte con ✕.</p>
     <h3>Cuori</h3>
     <p>Con i cuori accesi hai tre tentativi: un panda messo dove non va ti costa un cuore e la casella viene segnata con ✕. Senza cuori giochi in modo rilassato e controlli tu quando vuoi.</p>
     <h3>Suggerimenti</h3>
@@ -375,7 +375,7 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
     <h3>Tastiera</h3>
     <table class="tabella">
       <tr><th scope="row"><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd></th><td>Spostati</td></tr>
-      <tr><th scope="row"><kbd>Spazio</kbd> o <kbd>Invio</kbd></th><td>Segno, poi panda, poi casella vuota</td></tr>
+      <tr><th scope="row"><kbd>Spazio</kbd> · <kbd>Invio</kbd></th><td>Mette o toglie il segno · il panda</td></tr>
       <tr><th scope="row"><kbd>P</kbd> · <kbd>X</kbd></th><td>Metti o togli il panda · il segno</td></tr>
       <tr><th scope="row"><kbd>Canc</kbd> o <kbd>⌫</kbd></th><td>Svuota la casella</td></tr>
       <tr><th scope="row"><kbd>S</kbd></th><td>Suggerimento</td></tr>
@@ -1154,8 +1154,9 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
     togli: function (k) { try { localStorage.removeItem(PREFISSO + k); } catch (e) { /* niente */ } }
   };
   var moviMeno = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var imp = Object.assign({ cuori: true, ombre: true, conflitti: true, lettere: true, animazioni: !moviMeno, suoni: true, tema: 'auto', strumento: 'ciclo' },
+  var imp = Object.assign({ cuori: true, ombre: true, conflitti: true, lettere: true, animazioni: !moviMeno, suoni: true, tema: 'auto', strumento: 'doppio' },
     archivio.leggi('impostazioni', {}));
+  if (imp.strumento === 'ciclo') imp.strumento = 'doppio';
   function progVuoto() { return { completati: {}, inCorso: {}, ultimo: 0 }; }
   var prog = Object.assign(progVuoto(), archivio.leggi('progresso', {}));
   function salvaImp() { archivio.scrivi('impostazioni', imp); }
@@ -1245,14 +1246,30 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
     annuncia('Mossa ripristinata.');
   }
 
-  /** Un tocco sulla casella, secondo lo strumento scelto. */
+  /**
+   * Un tocco sulla casella, secondo lo strumento scelto.
+   * Strumento «doppio» (predefinito): un tocco mette o toglie la ✕ (e toglie
+   * un panda); due tocchi veloci sulla stessa casella mettono il panda.
+   */
+  var DOPPIO_MS = 350, ultimoTocco = null;
   function tocca(p, strumento) {
     if (!puoAgire() || p < 0) return;
-    var s = G.stato[p], nuovo;
+    var s = G.stato[p], nuovo, ora = Date.now();
     strumento = strumento || imp.strumento;
-    if (strumento === 'panda') nuovo = s === 2 ? 0 : 2;
-    else if (strumento === 'segno') nuovo = s === 1 ? 0 : 1;
-    else nuovo = s === 0 ? 1 : s === 1 ? 2 : 0;
+    if (strumento === 'doppio') {
+      var u = ultimoTocco;
+      ultimoTocco = { p: p, t: ora, prima: s, mosse: G.storia.length };
+      if (u && u.p === p && ora - u.t < DOPPIO_MS) {
+        ultimoTocco = null;
+        if (u.prima === 2) return;              // doppio tocco su un panda: resta tolto
+        // si annulla in silenzio il primo tocco e si mette il panda
+        if (G.storia.length === u.mosse + 1) { var m = G.storia.pop(); m.forEach(function (c) { imposta(c[0], c[1]); }); }
+        imposta0(p, 2);
+        return;
+      }
+      nuovo = s === 0 ? 1 : 0;
+    } else if (strumento === 'panda') nuovo = s === 2 ? 0 : 2;
+    else nuovo = s === 1 ? 0 : 1;
     imposta0(p, nuovo);
   }
   function imposta0(p, nuovo) {
@@ -1516,7 +1533,7 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
     var s = G.sel;
     $('stato').innerHTML = (s < 0 ? 'Nessuna casella selezionata.' : '<strong>Casella:</strong> ' + nomeCasella(s) + ' · ' + M.nomeZona(G.zone[s]) + ' · ' +
       (G.stato[s] === 2 ? 'panda' : G.stato[s] === 1 ? 'segno ✕' : 'vuota')) +
-      '<br><strong>Un tocco:</strong> ' + { ciclo: 'segno, poi panda, poi vuota', panda: 'mette o toglie il panda', segno: 'mette o toglie il segno' }[imp.strumento];
+      '<br><strong>Un tocco:</strong> ' + { doppio: 'mette o toglie la ✕ · <strong>doppio tocco:</strong> panda', panda: 'mette o toglie il panda', segno: 'mette o toglie il segno' }[imp.strumento];
   }
   function aggiornaContatori() {
     if (!G) return;
@@ -1716,7 +1733,7 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
     seleziona(0);
     if (avviso) mostraMessaggio('attenzione', '<p>' + avviso + '</p>');
     else if (ripresa) mostraMessaggio('ok', '<p>Partita ripresa da dove l’avevi lasciata (' + tempo(G.tempo) + ').</p>');
-    else if (typeof id === 'number' && id <= 3 && !Object.keys(prog.completati).length) mostraMessaggio('aiuto', '<p><strong>Benvenuto!</strong> Metti un panda in ogni riga, colonna e boschetto colorato, senza che due panda si tocchino. Tocca una casella per segnarla con ✕, toccala ancora per mettere il panda. Se ti blocchi, premi «Aiuto».</p>');
+    else if (typeof id === 'number' && id <= 3 && !Object.keys(prog.completati).length) mostraMessaggio('aiuto', '<p><strong>Benvenuto!</strong> Metti un panda in ogni riga, colonna e boschetto colorato, senza che due panda si tocchino. Tocca una casella per segnarla con ✕ (tocca di nuovo per toglierla), tocca due volte veloce per mettere il panda. Se ti blocchi, premi «Aiuto».</p>');
     else if (typeof id === 'number' && completato(id)) mostraMessaggio('ok', '<p>Hai già completato questo livello: rigiocalo per battere il record di ' + prog.completati[id].punti.toLocaleString('it-IT') + ' punti.</p>');
     else nascondiMessaggio();
     annuncia((ripresa ? 'Partita ripresa. ' : '') + $('t-gioco').textContent + '. Griglia ' + liv.n + ' per ' + liv.n + ', ' + liv.fascia + '.' + (imp.cuori ? ' Hai ' + G.cuori + ' cuori.' : ''));
@@ -1926,7 +1943,8 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
       seleziona(r * n + c);
       return;
     }
-    if ((k === ' ' || k === 'Enter') && dentro && s >= 0) { e.preventDefault(); tocca(s, 'ciclo'); return; }
+    if (k === ' ' && dentro && s >= 0) { e.preventDefault(); tocca(s, 'segno'); return; }
+    if (k === 'Enter' && dentro && s >= 0) { e.preventDefault(); tocca(s, 'panda'); return; }
     if ((k === 'p' || k === 'P') && s >= 0) { e.preventDefault(); tocca(s, 'panda'); return; }
     if ((k === 'x' || k === 'X') && s >= 0) { e.preventDefault(); tocca(s, 'segno'); return; }
     if ((k === 'Backspace' || k === 'Delete') && s >= 0) { e.preventDefault(); if (G.stato[s]) imposta0(s, 0); return; }

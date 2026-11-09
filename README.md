@@ -92,10 +92,12 @@ deduzione funziona lo dice, e offre di mostrare un panda contandolo come aiuto.
 - **Rilassato**: nessuna penalità; i conflitti con le regole si vedono subito
   (righe diagonali e «!»), i panda fuori posto si vedono con «Controlla»
   (bordo rosso e «?»).
-- **Comandi**: un tocco mette il segno, il secondo il panda, il terzo svuota;
-  oppure gli strumenti «Solo panda» e «Solo segni». Trascinando si segnano più
-  caselle. Il clic destro mette o toglie il panda.
-- **Tastiera**: frecce, Spazio, P, X, Canc, S, Ctrl+Z e Ctrl+Y, Esc.
+- **Comandi**: un tocco mette o toglie la ✕ (e su un panda lo toglie); un
+  **doppio tocco veloce** (entro 350 ms, o un doppio clic) mette il panda, senza
+  lasciare la ✕ intermedia nella cronologia. In alternativa ci sono gli
+  strumenti «Solo panda» e «Solo segni». Trascinando si segnano più caselle. Il
+  clic destro mette o toglie il panda.
+- **Tastiera**: frecce, Spazio (✕), Invio (panda), P, X, Canc, S, Ctrl+Z e Ctrl+Y, Esc.
 - **Livelli**: tre capitoli, paginazione da 50, ricerca per numero, filtri per
   stato e per difficoltà. I primi tre livelli di ogni capitolo sono aperti;
   ogni livello completato apre il successivo.

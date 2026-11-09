@@ -61,8 +61,9 @@
     togli: function (k) { try { localStorage.removeItem(PREFISSO + k); } catch (e) { /* niente */ } }
   };
   var moviMeno = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var imp = Object.assign({ cuori: true, ombre: true, conflitti: true, lettere: true, animazioni: !moviMeno, suoni: true, tema: 'auto', strumento: 'ciclo' },
+  var imp = Object.assign({ cuori: true, ombre: true, conflitti: true, lettere: true, animazioni: !moviMeno, suoni: true, tema: 'auto', strumento: 'doppio' },
     archivio.leggi('impostazioni', {}));
+  if (imp.strumento === 'ciclo') imp.strumento = 'doppio';
   function progVuoto() { return { completati: {}, inCorso: {}, ultimo: 0 }; }
   var prog = Object.assign(progVuoto(), archivio.leggi('progresso', {}));
   function salvaImp() { archivio.scrivi('impostazioni', imp); }
@@ -152,14 +153,30 @@
     annuncia('Mossa ripristinata.');
   }
 
-  /** Un tocco sulla casella, secondo lo strumento scelto. */
+  /**
+   * Un tocco sulla casella, secondo lo strumento scelto.
+   * Strumento «doppio» (predefinito): un tocco mette o toglie la ✕ (e toglie
+   * un panda); due tocchi veloci sulla stessa casella mettono il panda.
+   */
+  var DOPPIO_MS = 350, ultimoTocco = null;
   function tocca(p, strumento) {
     if (!puoAgire() || p < 0) return;
-    var s = G.stato[p], nuovo;
+    var s = G.stato[p], nuovo, ora = Date.now();
     strumento = strumento || imp.strumento;
-    if (strumento === 'panda') nuovo = s === 2 ? 0 : 2;
-    else if (strumento === 'segno') nuovo = s === 1 ? 0 : 1;
-    else nuovo = s === 0 ? 1 : s === 1 ? 2 : 0;
+    if (strumento === 'doppio') {
+      var u = ultimoTocco;
+      ultimoTocco = { p: p, t: ora, prima: s, mosse: G.storia.length };
+      if (u && u.p === p && ora - u.t < DOPPIO_MS) {
+        ultimoTocco = null;
+        if (u.prima === 2) return;              // doppio tocco su un panda: resta tolto
+        // si annulla in silenzio il primo tocco e si mette il panda
+        if (G.storia.length === u.mosse + 1) { var m = G.storia.pop(); m.forEach(function (c) { imposta(c[0], c[1]); }); }
+        imposta0(p, 2);
+        return;
+      }
+      nuovo = s === 0 ? 1 : 0;
+    } else if (strumento === 'panda') nuovo = s === 2 ? 0 : 2;
+    else nuovo = s === 1 ? 0 : 1;
     imposta0(p, nuovo);
   }
   function imposta0(p, nuovo) {
@@ -423,7 +440,7 @@
     var s = G.sel;
     $('stato').innerHTML = (s < 0 ? 'Nessuna casella selezionata.' : '<strong>Casella:</strong> ' + nomeCasella(s) + ' · ' + M.nomeZona(G.zone[s]) + ' · ' +
       (G.stato[s] === 2 ? 'panda' : G.stato[s] === 1 ? 'segno ✕' : 'vuota')) +
-      '<br><strong>Un tocco:</strong> ' + { ciclo: 'segno, poi panda, poi vuota', panda: 'mette o toglie il panda', segno: 'mette o toglie il segno' }[imp.strumento];
+      '<br><strong>Un tocco:</strong> ' + { doppio: 'mette o toglie la ✕ · <strong>doppio tocco:</strong> panda', panda: 'mette o toglie il panda', segno: 'mette o toglie il segno' }[imp.strumento];
   }
   function aggiornaContatori() {
     if (!G) return;
@@ -623,7 +640,7 @@
     seleziona(0);
     if (avviso) mostraMessaggio('attenzione', '<p>' + avviso + '</p>');
     else if (ripresa) mostraMessaggio('ok', '<p>Partita ripresa da dove l’avevi lasciata (' + tempo(G.tempo) + ').</p>');
-    else if (typeof id === 'number' && id <= 3 && !Object.keys(prog.completati).length) mostraMessaggio('aiuto', '<p><strong>Benvenuto!</strong> Metti un panda in ogni riga, colonna e boschetto colorato, senza che due panda si tocchino. Tocca una casella per segnarla con ✕, toccala ancora per mettere il panda. Se ti blocchi, premi «Aiuto».</p>');
+    else if (typeof id === 'number' && id <= 3 && !Object.keys(prog.completati).length) mostraMessaggio('aiuto', '<p><strong>Benvenuto!</strong> Metti un panda in ogni riga, colonna e boschetto colorato, senza che due panda si tocchino. Tocca una casella per segnarla con ✕ (tocca di nuovo per toglierla), tocca due volte veloce per mettere il panda. Se ti blocchi, premi «Aiuto».</p>');
     else if (typeof id === 'number' && completato(id)) mostraMessaggio('ok', '<p>Hai già completato questo livello: rigiocalo per battere il record di ' + prog.completati[id].punti.toLocaleString('it-IT') + ' punti.</p>');
     else nascondiMessaggio();
     annuncia((ripresa ? 'Partita ripresa. ' : '') + $('t-gioco').textContent + '. Griglia ' + liv.n + ' per ' + liv.n + ', ' + liv.fascia + '.' + (imp.cuori ? ' Hai ' + G.cuori + ' cuori.' : ''));
@@ -833,7 +850,8 @@
       seleziona(r * n + c);
       return;
     }
-    if ((k === ' ' || k === 'Enter') && dentro && s >= 0) { e.preventDefault(); tocca(s, 'ciclo'); return; }
+    if (k === ' ' && dentro && s >= 0) { e.preventDefault(); tocca(s, 'segno'); return; }
+    if (k === 'Enter' && dentro && s >= 0) { e.preventDefault(); tocca(s, 'panda'); return; }
     if ((k === 'p' || k === 'P') && s >= 0) { e.preventDefault(); tocca(s, 'panda'); return; }
     if ((k === 'x' || k === 'X') && s >= 0) { e.preventDefault(); tocca(s, 'segno'); return; }
     if ((k === 'Backspace' || k === 'Delete') && s >= 0) { e.preventDefault(); if (G.stato[s]) imposta0(s, 0); return; }
