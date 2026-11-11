@@ -369,6 +369,7 @@
     var gr = $('griglia'), n = G.n, z = G.zone;
     gr.innerHTML = '';
     gr.style.setProperty('--n', n);
+    gr.parentNode.style.setProperty('--n', n);
     gr.setAttribute('aria-label', 'Griglia ' + n + ' per ' + n + ' con ' + n + ' boschetti');
     celle = [];
     var prima = {};
@@ -419,8 +420,18 @@
     el.classList.toggle('sbagliata', sbagliata(p) && !!G.controllate[p]);
     el.setAttribute('aria-label', etichetta(p));
   }
+  /** Segni ✓ accanto alle righe e sotto le colonne che hanno il loro panda («!» se ne hanno due). */
+  function aggiornaSegni() {
+    if (!G) return;
+    var r = new Array(G.n).fill(0), c = new Array(G.n).fill(0);
+    for (var p = 0; p < G.N; p++) if (G.stato[p] === 2) { r[G.geo.RIGA[p]]++; c[G.geo.COLONNA[p]]++; }
+    var segno = function (k) { return k === 1 ? '<span>✓</span>' : k > 1 ? '<span class="doppio">!</span>' : '<span></span>'; };
+    $('segni-righe').innerHTML = r.map(segno).join('');
+    $('segni-colonne').innerHTML = c.map(segno).join('');
+  }
   function ridisegna() {
     if (!G) return;
+    aggiornaSegni();
     for (var p = 0; p < G.N; p++) disegnaCella(p);
     evidenziaSelezione(); aggiornaContatori();
   }
@@ -428,7 +439,7 @@
     var set = {};
     toccate.forEach(function (p) { set[p] = 1; G.ombre[p].forEach(function (q) { set[q] = 1; }); });
     Object.keys(set).forEach(function (p) { disegnaCella(+p); });
-    evidenziaSelezione(); aggiornaContatori(); salva();
+    aggiornaSegni(); evidenziaSelezione(); aggiornaContatori(); salva();
   }
   function evidenziaSelezione() {
     if (!G) return;
@@ -550,7 +561,7 @@
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'btn';
       b.setAttribute('aria-pressed', String(i === vista.capitolo));
-      b.innerHTML = '<span>' + (i + 1) + ' · ' + c.nome + ' · ' + c.n + '×' + c.n + '</span><small>Livelli ' + c.da + '–' + c.a + ' · ' + fatti + ' completati</small>';
+      b.innerHTML = '<span>' + c.nome + ' · ' + c.n + '×' + c.n + '</span><small>Capitolo ' + (i + 1) + ' · livelli ' + c.da + '–' + c.a + ' · ' + fatti + ' completati</small>';
       b.addEventListener('click', function () { vista.capitolo = i; vista.pagina = 0; disegnaLivelli(); });
       cap.appendChild(b);
     });
@@ -630,9 +641,9 @@
     }
     if (typeof id === 'number') { prog.ultimo = id; salvaProg(); }
     costruisciGriglia();
-    $('t-gioco').textContent = (typeof id === 'number' ? 'Livello ' + id + ' · ' : '') + titolo(id);
+    $('t-gioco').innerHTML = typeof id === 'number' ? 'Livello ' + id + ' <span class="titolo-sec">· ' + titolo(id) + '</span>' : 'Partita libera';
     $('meta-livello').textContent = liv.n + '×' + liv.n + ' · ' + liv.fascia + ' (stima)' +
-      (typeof id === 'number' ? ' · capitolo ' + (capitoloDi(id) + 1) + ' · completati ' + Object.keys(prog.completati).length + ' su ' + TOTALE : ' · codice ' + liv.seed);
+      (typeof id === 'number' ? ' · capitolo ' + (capitoloDi(id) + 1) + ' · ' + CAPITOLI[capitoloDi(id)].nome : ' · codice ' + liv.seed);
     document.title = 'Pandino · ' + (typeof id === 'number' ? 'Livello ' + id : 'Partita libera');
     $('velo-pausa').hidden = true; $('griglia').inert = false; $('griglia').removeAttribute('aria-hidden');
     mostra('s-gioco');
@@ -640,7 +651,8 @@
     seleziona(0);
     if (avviso) mostraMessaggio('attenzione', '<p>' + avviso + '</p>');
     else if (ripresa) mostraMessaggio('ok', '<p>Partita ripresa da dove l’avevi lasciata (' + tempo(G.tempo) + ').</p>');
-    else if (typeof id === 'number' && id <= 3 && !Object.keys(prog.completati).length) mostraMessaggio('aiuto', '<p><strong>Benvenuto!</strong> Metti un panda in ogni riga, colonna e boschetto colorato, senza che due panda si tocchino. Tocca una casella per segnarla con ✕ (tocca di nuovo per toglierla), tocca due volte veloce per mettere il panda. Se ti blocchi, premi «Aiuto».</p>');
+    else if (typeof id === 'number' && id <= 3 && !Object.keys(prog.completati).length) mostraMessaggio('aiuto', '<p><strong>Benvenuto!</strong> Metti un panda in ogni riga, colonna e boschetto colorato, senza che due panda si tocchino. Tocca una casella per segnarla con ✕ (tocca di nuovo per toglierla), tocca due volte veloce per mettere il panda. Se ti blocchi, premi «Aiuto».</p>',
+      [{ testo: 'Guarda come si fa', primario: true, fn: function () { apri('d-regole'); var gz = $('gesto'); gz.scrollIntoView({ block: 'center' }); $('gesto-riproduci').focus({ preventScroll: true }); gesto.riproduci(); } }]);
     else if (typeof id === 'number' && completato(id)) mostraMessaggio('ok', '<p>Hai già completato questo livello: rigiocalo per battere il record di ' + prog.completati[id].punti.toLocaleString('it-IT') + ' punti.</p>');
     else nascondiMessaggio();
     annuncia((ripresa ? 'Partita ripresa. ' : '') + $('t-gioco').textContent + '. Griglia ' + liv.n + ' per ' + liv.n + ', ' + liv.fascia + '.' + (imp.cuori ? ' Hai ' + G.cuori + ' cuori.' : ''));
@@ -780,6 +792,78 @@
     }
     $('esempio').innerHTML = h + '</div>';
   }
+
+
+  // ---------------------------------------------------------------------
+  // Schemi delle quattro regole (SVG disegnato qui, colori dalle variabili CSS)
+  // ---------------------------------------------------------------------
+  var DIDA_REGOLA = {
+    riga: 'Un solo panda per riga', colonna: 'Un solo panda per colonna',
+    boschetto: 'Un solo panda per boschetto', tocco: 'Le 8 caselle intorno restano vuote'
+  };
+  /** Mini griglia 5×5 (viewBox 100×100, caselle da 20): la casella del panda e le caselle che esclude. */
+  function schemaRegola(tipo, conNome) {
+    var panda = { riga: [2, 1], colonna: [1, 3], boschetto: [2, 2], tocco: [2, 2] }[tipo];
+    var zona = { riga: 's-r', colonna: 's-k', boschetto: 's-b', tocco: 's-t' }[tipo];
+    var boschetto = [[1, 1], [1, 2], [2, 1], [2, 2], [3, 2], [3, 3]];
+    function dentro(r, c) {
+      if (tipo === 'riga') return r === 2;
+      if (tipo === 'colonna') return c === 3;
+      if (tipo === 'boschetto') return boschetto.some(function (x) { return x[0] === r && x[1] === c; });
+      return Math.abs(r - 2) <= 1 && Math.abs(c - 2) <= 1;
+    }
+    var h = '<svg viewBox="-2 -2 104 104" ' + (conNome ? 'role="img" aria-label="' + DIDA_REGOLA[tipo] + '"' : 'aria-hidden="true" focusable="false"') + '>';
+    for (var r = 0; r < 5; r++) for (var c = 0; c < 5; c++) {
+      var x = c * 20, y = r * 20, d = dentro(r, c);
+      h += '<rect class="' + (d ? zona : 's-c') + '" x="' + x + '" y="' + y + '" width="20" height="20"/>';
+      if (d && !(r === panda[0] && c === panda[1])) h += '<path class="s-x" d="M' + (x + 6) + ' ' + (y + 6) + 'l8 8m0-8l-8 8"/>';
+    }
+    if (tipo === 'boschetto') h += '<path class="s-bordo" d="M20 20h40v40h20v20h-40v-20h-20z"/>';
+    if (tipo === 'tocco') h += '<rect class="s-bordo" x="20" y="20" width="60" height="60"/>';
+    h += '<use href="#panda-' + ({ riga: 2, colonna: 3, boschetto: 1, tocco: 9 }[tipo]) + '" x="' + (panda[1] * 20 + 1) + '" y="' + (panda[0] * 20 + 1) + '" width="18" height="18"/>';
+    return h + '</svg>';
+  }
+  function disegnaSchemi() {
+    document.querySelectorAll('.schema-regola').forEach(function (el) { el.innerHTML = schemaRegola(el.dataset.regola, false); });
+    $('schemi-regole').innerHTML = ['riga', 'colonna', 'boschetto', 'tocco'].map(function (t) {
+      return '<figure>' + schemaRegola(t, true) + '<figcaption>' + DIDA_REGOLA[t] + '</figcaption></figure>';
+    }).join('');
+  }
+
+  // ---------------------------------------------------------------------
+  // Sequenza del gesto: comandata da chi legge, senza ciclo continuo
+  // ---------------------------------------------------------------------
+  var gesto = (function () {
+    var passo = 0, timer = null, N = 3;
+    function mostra(i, animato) {
+      passo = (i + N) % N;
+      var cella = $('gesto-cella'), dito = $('gesto-dito');
+      cella.innerHTML = passo === 0 ? '<span class="segno" aria-hidden="true">✕</span>' : passo === 2 ? P.uso(2) : '';
+      Array.prototype.forEach.call($('gesto-passi').children, function (li, k) { li.classList.toggle('attivo', k === passo); });
+      $('gesto-indice').textContent = 'Passaggio ' + (passo + 1) + ' di ' + N;
+      if (animato !== false) {
+        dito.classList.remove('batti', 'batti2'); void dito.offsetWidth;
+        dito.classList.add(passo === 2 ? 'batti2' : 'batti');
+      }
+    }
+    function ferma() { clearInterval(timer); timer = null; $('gesto-riproduci').textContent = '▶ Riproduci'; }
+    function riproduci() {
+      if (timer) { ferma(); return; }
+      mostra(0);
+      $('gesto-riproduci').textContent = '⏸ Pausa';
+      timer = setInterval(function () { if (passo >= N - 1) { ferma(); return; } mostra(passo + 1); }, 1700);
+    }
+    function avvia() {
+      $('gesto').classList.add('attiva');
+      $('gesto-comandi').hidden = false;
+      $('gesto-avanti').addEventListener('click', function () { ferma(); mostra(passo + 1); });
+      $('gesto-indietro').addEventListener('click', function () { ferma(); mostra(passo - 1); });
+      $('gesto-riproduci').addEventListener('click', riproduci);
+      $('d-regole').addEventListener('close', ferma);
+      mostra(0, false);
+    }
+    return { avvia: avvia, riproduci: function () { if (!timer) riproduci(); } };
+  })();
 
   // =====================================================================
   // H. Tocco, trascinamento, tastiera, suoni
@@ -932,6 +1016,8 @@
     $('simboli').innerHTML = P.simboli();
     $('marchio-panda').innerHTML = P.uso(9, 'icona');
     disegnaEsempio();
+    disegnaSchemi();
+    gesto.avvia();
     collega();
     applicaImp();
     mostra('s-inizio');

@@ -101,7 +101,8 @@ async function mettiTutti(p, l) {
   await cella(p, s1[0]).focus();
   await p.keyboard.press('p');
   ok((await stato(p)).stato[s1[0]] === '2', 'Il tasto P mette il panda');
-  ok(await p.locator('#griglia .puntino').count() > 0, 'Le caselle escluse dal panda mostrano un puntino');
+  ok(await p.locator('#griglia .puntino').count() > 0, 'Le caselle escluse dal panda mostrano un trattino');
+  ok((await p.locator('#segni-righe span').nth(0).textContent()) === '✓' && (await p.locator('#segni-colonne span').nth(l1.soluzione[0]).textContent()) === '✓', 'La riga e la colonna del panda mostrano il segno ✓');
   const et = await cella(p, s1[0]).getAttribute('aria-label');
   ok(/boschetto [A-J]: panda/.test(et), 'Nome accessibile: «' + et + '»');
   // trascinamento: segna più caselle
@@ -210,6 +211,17 @@ async function mettiTutti(p, l) {
   await p.waitForSelector('#d-fine[open]');
   await foto(p, '07-esperto-con-aiuti');
   await p.click('#btn-vai-livelli');
+
+  // ===================================================== schemi delle regole e sequenza del gesto
+  await p.goto(base);
+  ok(await p.locator('.regole-brevi .schema-regola svg').count() === 4, 'Pagina d’inizio: quattro schemi accanto alle regole');
+  await p.click('[data-apri="d-regole"]');
+  ok(await p.locator('#schemi-regole svg[role="img"][aria-label]').count() === 4, 'Regole: quattro schemi con nome accessibile');
+  await p.focus('#gesto-avanti'); await p.keyboard.press('Enter');
+  ok((await p.textContent('#gesto-indice')) === 'Passaggio 2 di 3' && (await p.locator('#gesto-cella .segno').count()) === 0, 'Sequenza del gesto: «Avanti» da tastiera porta al passaggio 2 (✕ tolta)');
+  await p.keyboard.press('Enter');
+  ok((await p.locator('#gesto-cella svg').count()) === 1, 'Sequenza del gesto: al passaggio 3 compare il panda');
+  await p.keyboard.press('Escape');
 
   // ===================================================== partita libera
   const giocate = [];

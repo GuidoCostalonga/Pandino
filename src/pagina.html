@@ -36,10 +36,10 @@
         <p class="sottotitolo">Ogni boschetto ospita un solo panda. Trova dove dorme ciascuno.</p>
       </div>
       <ol class="regole-brevi">
-        <li><span class="ico-regola" aria-hidden="true">↔</span>Un panda in ogni <strong>riga</strong></li>
-        <li><span class="ico-regola" aria-hidden="true">↕</span>Un panda in ogni <strong>colonna</strong></li>
-        <li><span class="ico-regola" aria-hidden="true">🎋</span>Un panda in ogni <strong>boschetto</strong> colorato</li>
-        <li><span class="ico-regola" aria-hidden="true">✋</span>I panda <strong>non si toccano</strong>, nemmeno in diagonale</li>
+        <li><span class="schema-regola" data-regola="riga" aria-hidden="true"></span><span>Un panda in ogni <strong>riga</strong></span></li>
+        <li><span class="schema-regola" data-regola="colonna" aria-hidden="true"></span><span>Un panda in ogni <strong>colonna</strong></span></li>
+        <li><span class="schema-regola" data-regola="boschetto" aria-hidden="true"></span><span>Un panda in ogni <strong>boschetto</strong> colorato</span></li>
+        <li><span class="schema-regola" data-regola="tocco" aria-hidden="true"></span><span>I panda <strong>non si toccano</strong>, nemmeno in diagonale</span></li>
       </ol>
       <div class="azioni">
         <button type="button" class="btn primario grande" id="btn-continua"></button>
@@ -103,7 +103,11 @@
           </div>
         </div>
         <div class="cornice" id="cornice">
-          <div class="griglia" id="griglia" role="grid" aria-describedby="istruzioni-griglia"></div>
+          <div class="con-segni">
+            <div class="griglia" id="griglia" role="grid" aria-describedby="istruzioni-griglia"></div>
+            <div class="segni-righe" id="segni-righe" aria-hidden="true" title="✓ = riga con il suo panda"></div>
+            <div class="segni-colonne" id="segni-colonne" aria-hidden="true" title="✓ = colonna con il suo panda"></div>
+          </div>
           <div class="pausa-velo" id="velo-pausa" hidden>
             <div>
               <p class="grosso">⏸ In pausa</p>
@@ -117,7 +121,7 @@
 
       <div class="pannello">
         <div class="strumento" role="radiogroup" aria-label="Che cosa fa un tocco sulla casella">
-          <button type="button" class="btn" role="radio" data-strumento="doppio" aria-checked="true"><span aria-hidden="true">✕ · 🐼🐼</span><small>Tocco ✕, doppio tocco panda</small></button>
+          <button type="button" class="btn" role="radio" data-strumento="doppio" aria-checked="true"><span aria-hidden="true">✕ · 🐼</span><small>1 tocco ✕ · 2 tocchi panda</small></button>
           <button type="button" class="btn" role="radio" data-strumento="panda" aria-checked="false"><span aria-hidden="true">🐼</span><small>Solo panda</small></button>
           <button type="button" class="btn" role="radio" data-strumento="segno" aria-checked="false"><span aria-hidden="true">✕</span><small>Solo segni</small></button>
         </div>
@@ -148,6 +152,7 @@
     <div class="testa-sezione"><h2 id="t-regole">Come si gioca</h2><button class="btn piccolo" type="button" data-chiudi>Chiudi</button></div>
     <div class="esempio" id="esempio" aria-hidden="true"></div>
     <h3>Le regole</h3>
+    <div class="schemi" id="schemi-regole"></div>
     <ul>
       <li>In ogni <strong>riga</strong> c'è un solo panda.</li>
       <li>In ogni <strong>colonna</strong> c'è un solo panda.</li>
@@ -157,6 +162,20 @@
     <p>Ogni livello ha una sola soluzione e si trova con il ragionamento.</p>
     <h3>Come si gioca</h3>
     <p>Un tocco su una casella la segna con ✕ («qui no»); un altro tocco toglie la ✕. Per mettere il panda tocca <strong>due volte veloce</strong> la stessa casella (doppio clic con il mouse). Un tocco su un panda lo toglie. Puoi anche scegliere «Solo panda» o «Solo segni». Trascinando il dito o il mouse su più caselle le segni tutte con ✕.</p>
+    <div class="gesto" id="gesto">
+      <div class="gesto-scena" aria-hidden="true"><div class="gesto-cella z1" id="gesto-cella"></div><span class="gesto-dito" id="gesto-dito">👆</span></div>
+      <ol class="gesto-passi" id="gesto-passi">
+        <li><strong>Un tocco:</strong> compare la ✕, «qui il panda non c'è».</li>
+        <li><strong>Un altro tocco:</strong> la ✕ sparisce. Così si corregge un segno messo per sbaglio.</li>
+        <li><strong>Due tocchi veloci:</strong> arriva il panda.</li>
+      </ol>
+      <div class="gesto-comandi" id="gesto-comandi" hidden>
+        <button type="button" class="btn piccolo" id="gesto-indietro">← Indietro</button>
+        <button type="button" class="btn piccolo" id="gesto-riproduci">▶ Riproduci</button>
+        <button type="button" class="btn piccolo" id="gesto-avanti">Avanti →</button>
+        <span class="nota" id="gesto-indice" aria-live="polite"></span>
+      </div>
+    </div>
     <h3>Cuori</h3>
     <p>Con i cuori accesi hai tre tentativi: un panda messo dove non va ti costa un cuore e la casella viene segnata con ✕. Senza cuori giochi in modo rilassato e controlli tu quando vuoi.</p>
     <h3>Suggerimenti</h3>
