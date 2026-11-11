@@ -73,7 +73,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 0 16px 32px; }
 .sottotitolo { margin: 4px 0 0; color: var(--tenue); font-size: 1.1rem; }
 .regole-brevi { list-style: none; padding: 0; margin: 18px 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 .regole-brevi li { display: flex; align-items: center; gap: 10px; background: var(--carta-2); border-radius: 12px; padding: 10px 12px; }
-.ico-regola { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--carta); border: 2px solid var(--linea); font-weight: 900; }
+.schema-regola { width: 52px; height: 52px; flex: none; }
+.schema-regola svg { width: 100%; height: 100%; display: block; }
 .riepilogo { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 .dato { background: var(--carta-2); border-radius: 12px; padding: 10px 12px; }
 .dato b { display: block; font-size: 1.25rem; }
@@ -128,8 +129,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 0 16px 32px; }
 .cella > * { position: relative; z-index: 1; }
 .cella .panda { width: 82%; height: 82%; pointer-events: none; }
 .cella .segno { font-weight: 900; font-size: 20px; font-size: 46cqw; line-height: 1; color: var(--inchiostro); opacity: .7; pointer-events: none; }
-.cella .puntino { width: 7px; height: 7px; width: 16cqw; height: 16cqw; border-radius: 50%; background: var(--inchiostro); opacity: .28; pointer-events: none; }
-.cella .lettera { position: absolute; left: 4%; top: 2%; font-size: 10px; font-size: 22cqw; font-weight: 800; line-height: 1; color: var(--inchiostro); opacity: .55; pointer-events: none; }
+.cella .puntino { width: 10px; height: 3px; width: 34cqw; height: 9cqw; border-radius: 99px; background: var(--inchiostro); opacity: .62; pointer-events: none; }
+.cella .lettera { position: absolute; left: 1px; top: 1px; z-index: 2; font-size: 12px; font-size: max(12px, 24cqw); font-weight: 800; line-height: 1; color: var(--inchiostro); background: color-mix(in srgb, var(--carta) 82%, transparent); border-radius: 4px; padding: 1px 3px; pointer-events: none; }
 .cella.selezionata { box-shadow: inset 0 0 0 3px var(--selez), inset 0 0 0 5px var(--carta); z-index: 2; }
 .cella.conflitto { background-image: repeating-linear-gradient(45deg, transparent 0 6px, color-mix(in srgb, var(--errore) 35%, transparent) 6px 9px); }
 .cella .allarme { position: absolute; right: 5%; top: 2%; font-weight: 900; font-size: 12px; font-size: 26cqw; color: var(--errore); line-height: 1; }
@@ -139,14 +140,14 @@ main { max-width: 1100px; margin: 0 auto; padding: 0 16px 32px; }
 /* motivi dei boschetti (oltre al colore) */
 .z0 { --zc: var(--z0); --mz: none; }
 .z1 { --zc: var(--z1); --mz: repeating-linear-gradient(45deg, var(--motivo) 0 2px, transparent 2px 9px); --mzs: auto; }
-.z2 { --zc: var(--z2); --mz: radial-gradient(circle, var(--motivo) 22%, transparent 24%); --mzs: 9px 9px; }
+.z2 { --zc: var(--z2); --mz: repeating-linear-gradient(30deg, var(--motivo) 0 2px, transparent 2px 9px); --mzs: auto; }
 .z3 { --zc: var(--z3); --mz: repeating-linear-gradient(0deg, var(--motivo) 0 2px, transparent 2px 8px); --mzs: auto; }
 .z4 { --zc: var(--z4); --mz: repeating-linear-gradient(-45deg, var(--motivo) 0 2px, transparent 2px 9px); --mzs: auto; }
 .z5 { --zc: var(--z5); --mz: repeating-linear-gradient(90deg, var(--motivo) 0 2px, transparent 2px 8px); --mzs: auto; }
-.z6 { --zc: var(--z6); --mz: linear-gradient(var(--motivo) 2px, transparent 2px), linear-gradient(90deg, var(--motivo) 2px, transparent 2px); --mzs: 10px 10px; }
-.z7 { --zc: var(--z7); --mz: radial-gradient(circle, var(--motivo) 32%, transparent 34%); --mzs: 14px 14px; }
+.z6 { --zc: var(--z6); --mz: repeating-linear-gradient(45deg, var(--motivo) 0 5px, transparent 5px 15px); --mzs: auto; }
+.z7 { --zc: var(--z7); --mz: repeating-linear-gradient(0deg, var(--motivo) 0 5px, transparent 5px 15px); --mzs: auto; }
 .z8 { --zc: var(--z8); --mz: conic-gradient(var(--motivo) 25%, transparent 0 50%, var(--motivo) 0 75%, transparent 0); --mzs: 12px 12px; }
-.z10 { --zc: var(--z10); --mz: radial-gradient(circle at 25% 25%, var(--motivo) 18%, transparent 20%), radial-gradient(circle at 75% 75%, var(--motivo) 18%, transparent 20%); --mzs: 12px 12px; }
+.z10 { --zc: var(--z10); --mz: repeating-linear-gradient(90deg, var(--motivo) 0 5px, transparent 5px 15px); --mzs: auto; }
 .z11 { --zc: var(--z11); --mz: repeating-linear-gradient(60deg, var(--motivo) 0 3px, transparent 3px 11px); --mzs: auto; }
 .z9 { --zc: var(--z9); --mz: repeating-linear-gradient(45deg, var(--motivo) 0 2px, transparent 2px 8px), repeating-linear-gradient(-45deg, var(--motivo) 0 2px, transparent 2px 8px); --mzs: auto; }
 
@@ -208,4 +209,54 @@ kbd { font: 600 .85rem/1 ui-monospace, Menlo, monospace; padding: 3px 6px; borde
   main { padding: 0 12px 24px; }
   .marchio { font-size: 1.15rem; }
   .strumenti .btn { font-size: .74rem; }
+}
+
+/* ---------------------------------------------------------------- ritocco: segni di riga e colonna, schemi, gesto */
+.con-segni { display: grid; grid-template-columns: minmax(0, 1fr) 14px; grid-template-rows: auto 14px; gap: 1px 2px; }
+.segni-righe { display: grid; grid-template-rows: repeat(var(--n, 10), 1fr); padding: 3px 0; }
+.segni-colonne { display: grid; grid-template-columns: repeat(var(--n, 10), 1fr); padding: 0 3px; }
+.segni-righe span, .segni-colonne span { display: grid; place-items: center; font-size: 12px; font-weight: 900; line-height: 1; color: var(--bambu-scuro); }
+.segni-righe span.doppio, .segni-colonne span.doppio { color: var(--errore); }
+.schemi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.schemi figure { margin: 0; display: grid; gap: 4px; justify-items: center; text-align: center; font-size: .82rem; color: var(--tenue); }
+.schemi svg { width: 100%; max-width: 110px; height: auto; }
+@media (max-width: 480px) { .schemi { grid-template-columns: repeat(2, 1fr); } }
+.s-c { fill: var(--carta); stroke: var(--linea); stroke-width: 1; }
+.s-r { fill: var(--z5); stroke: var(--linea); stroke-width: 1; }
+.s-k { fill: var(--z2); stroke: var(--linea); stroke-width: 1; }
+.s-b { fill: var(--z1); stroke: var(--linea); stroke-width: 1; }
+.s-t { fill: var(--z3); stroke: var(--linea); stroke-width: 1; }
+.s-x { stroke: var(--inchiostro); stroke-width: 2.2; stroke-linecap: round; opacity: .75; }
+.s-bordo { fill: none; stroke: var(--bordo-zona); stroke-width: 2.4; stroke-linejoin: round; }
+.gesto { display: grid; gap: 10px; background: var(--carta-2); border-radius: 12px; padding: 12px; }
+.gesto-scena { position: relative; justify-self: center; width: 84px; height: 84px; }
+.gesto-cella { width: 70px; height: 70px; border: 3px solid var(--bordo-zona); border-radius: 8px; display: grid; place-items: center; background: var(--zc); container-type: size; position: relative; }
+.gesto-cella .panda { width: 82%; height: 82%; }
+.gesto-cella .segno { font-size: 40px; font-weight: 900; line-height: 1; opacity: .75; }
+.gesto-dito { position: absolute; right: -2px; bottom: -6px; font-size: 30px; line-height: 1; transform-origin: 50% 0; }
+.anim .gesto-dito.batti { animation: batti .26s var(--morbida) 1; }
+.anim .gesto-dito.batti2 { animation: batti .2s var(--morbida) 2; }
+@keyframes batti { 50% { transform: translate(-6px, -6px) scale(.86); } }
+.gesto-passi { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
+.gesto-passi li { padding: 2px 6px; border-radius: 6px; }
+.gesto.attiva .gesto-passi li { opacity: .6; }
+.gesto.attiva .gesto-passi li.attivo { opacity: 1; background: var(--carta); box-shadow: inset 3px 0 0 var(--accento); }
+.gesto-comandi { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.titolo-sec { font-weight: 600; }
+@media (max-width: 600px) {
+  .titolo-sec { display: none; }
+  .info-livello { gap: 4px; }
+  .contatori { flex-wrap: nowrap; gap: 6px; }
+  .contatore { padding: 2px 8px; font-size: .9rem; }
+  #box-cuori > span:first-child { display: none; }
+  .strumento .btn { min-height: 52px; }
+}
+@media (max-width: 420px) {
+  main { padding: 0 8px 24px; }
+  .cornice { --lato: min(calc(100vw - 16px), calc(100dvh - 190px), 600px); }
+  .strumento .btn { min-height: 44px; padding: 4px; }
+  .strumento .btn > span { display: none; }
+  .strumento small { font-size: .78rem; line-height: 1.15; }
+  .strumenti .btn { min-height: 48px; }
+  .pannello { gap: 8px; }
 }

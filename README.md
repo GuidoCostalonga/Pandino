@@ -111,8 +111,16 @@ con tempo e punteggio migliori, livello corrente, partite in corso (al massimo
 salvataggio avviene a ogni mossa, ogni 5 secondi e quando la pagina si chiude.
 
 ## Accessibilità
-- I boschetti si distinguono per colore, motivo di sfondo, bordo spesso e
-  lettera: mai per il solo colore. Tema chiaro e scuro.
+- I boschetti si distinguono per colore, motivo a righe (nessun motivo a pois
+  o a quadretti, per non confondersi con i segni del gioco), bordo spesso e
+  lettera su etichetta chiara di almeno 12 px: mai per il solo colore. Tema
+  chiaro e scuro.
+- Le caselle escluse dai panda mostrano un trattino con contrasto di almeno 3
+  a 1; accanto alla griglia un ✓ segna righe e colonne che hanno già il panda
+  («!» se ne hanno due).
+- Le regole sono illustrate da quattro schemi in SVG. Il gesto (tocco = ✕,
+  doppio tocco = panda) ha una sequenza animata comandata con Indietro,
+  Avanti e Riproduci, mai in ciclo continuo.
 - Griglia con ruoli `grid`, `row` e `gridcell`, tabindex mobile e nome
   accessibile per ogni casella (riga, colonna, boschetto, contenuto, conflitti).
 - Annunci a voce per mosse, errori, suggerimenti e vittoria.
